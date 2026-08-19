@@ -54,26 +54,53 @@ DEFAULT_SEED = 1234
 
 
 def score_split(
-    scorer: RewardModel, pairs: list[PreferencePair], batch_size: int
+    scorer: RewardModel,
+    pairs: list[PreferencePair],
+    batch_size: int,
+    checkpoint: Path | None = None,
 ) -> tuple[list[float], list[float]]:
     """Score every chosen and every rejected response. Returns them in order.
 
     Chosen and rejected are batched separately, matching the eval harness that
     produced the published number: each side is padded to its own batch maximum
     and the padding is fully masked, so batching cannot move a score.
+
+    A full pass over 1,987 pairs takes tens of minutes on this CPU, and this
+    machine kills long sessions. So progress is flushed to `checkpoint` as it
+    goes and picked up from there on the next run: a killed pass costs the
+    current chunk, not the whole variant. Resume is exact rather than
+    approximate - the pairs are scored in a fixed order, so the first K cached
+    scores are the first K pairs, and scoring continues at index K.
     """
     chosen: list[float] = []
     rejected: list[float] = []
+    if checkpoint is not None and checkpoint.exists():
+        cached = json.loads(checkpoint.read_text(encoding="utf-8"))
+        chosen, rejected = cached["chosen"], cached["rejected"]
+        chosen = chosen[: len(rejected)]
+        rejected = rejected[: len(chosen)]
+        if chosen:
+            print(f"    resuming at pair {len(chosen)}/{len(pairs)}", flush=True)
     started = time.perf_counter()
-    for start in range(0, len(pairs), batch_size):
+    resumed_at = len(chosen)
+    for start in range(resumed_at, len(pairs), batch_size):
         chunk = pairs[start : start + batch_size]
         chosen.extend(scorer.score_pairs([(p.prompt, p.chosen) for p in chunk]))
         rejected.extend(scorer.score_pairs([(p.prompt, p.rejected) for p in chunk]))
         done = start + len(chunk)
         if done % (batch_size * 25) == 0 or done == len(pairs):
-            rate = done / max(time.perf_counter() - started, 1e-9)
+            rate = (done - resumed_at) / max(time.perf_counter() - started, 1e-9)
             print(f"    {done}/{len(pairs)} pairs ({rate:.1f} pairs/s)", flush=True)
+            if checkpoint is not None:
+                _atomic_write(checkpoint, {"chosen": chosen, "rejected": rejected})
     return chosen, rejected
+
+
+def _atomic_write(path: Path, payload: dict[str, list[float]]) -> None:
+    """Write via a temp file and replace, so a kill mid-write cannot corrupt it."""
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(payload), encoding="utf-8")
+    tmp.replace(path)
 
 
 def _margins(chosen: list[float], rejected: list[float]) -> list[float]:
@@ -135,11 +162,18 @@ def run(
             continue
         print(f"[score] {variant}: {n_pairs} pairs, batch {batch_size}", flush=True)
         started = time.perf_counter()
-        chosen, rejected = score_split(build.scorer, pairs, batch_size)
+        partial = cache.with_name(cache.stem + ".partial.json")
+        chosen, rejected = score_split(build.scorer, pairs, batch_size, checkpoint=partial)
         elapsed = time.perf_counter() - started
         print(f"[score] {variant}: done in {elapsed / 60:.1f} min", flush=True)
+        if len(chosen) != len(pairs) or len(rejected) != len(pairs):
+            raise RuntimeError(
+                f"{variant}: scored {len(chosen)}/{len(pairs)} pairs - refusing to write a "
+                "partial pass as if it were a complete one"
+            )
         per_variant[variant] = {"chosen": chosen, "rejected": rejected}
-        cache.write_text(json.dumps(per_variant[variant]), encoding="utf-8")
+        _atomic_write(cache, per_variant[variant])
+        partial.unlink(missing_ok=True)
         if variant != "fp32":
             del build
 

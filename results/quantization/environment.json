@@ -1,0 +1,14 @@
+{
+  "platform": "Windows-10-10.0.19045-SP0",
+  "python": "3.11.15",
+  "cpu_model": "Intel64 Family 6 Model 165 Stepping 5, GenuineIntel",
+  "cpu_logical": 16,
+  "cpu_physical": 8,
+  "torch_version": "2.13.0+cpu",
+  "transformers_version": "5.15.0",
+  "httpx_version": "0.28.1",
+  "omp_num_threads": null,
+  "torch_num_threads": null,
+  "cuda_visible_devices": "",
+  "git_commit": "8d76c4b088f6b317d59b64e59fd7007287808237"
+}

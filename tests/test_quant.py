@@ -307,3 +307,34 @@ def test_cpu_only_is_enforced_in_the_quant_package() -> None:
 
     assert os.environ["CUDA_VISIBLE_DEVICES"] == ""
     assert not torch.cuda.is_available()
+
+
+def test_score_split_resumes_from_a_checkpoint_instead_of_rescoring(tmp_path: Path) -> None:
+    """A killed pass must cost the current chunk, not the whole variant."""
+    pairs = _fake_pairs(24)
+    ckpt = tmp_path / "partial.json"
+
+    full = _FakeScorer()
+    chosen, rejected = run_accuracy.score_split(full, pairs, batch_size=8, checkpoint=ckpt)  # type: ignore[arg-type]
+    assert ckpt.exists()
+
+    class _Counting(_FakeScorer):
+        calls = 0
+
+        def score_pairs(self, pairs: Any) -> list[float]:
+            _Counting.calls += 1
+            return super().score_pairs(pairs)
+
+    again_c, again_r = run_accuracy.score_split(_Counting(), pairs, batch_size=8, checkpoint=ckpt)  # type: ignore[arg-type]
+    assert _Counting.calls == 0, "a complete checkpoint must not be rescored"
+    assert (again_c, again_r) == (chosen, rejected)
+
+
+def test_score_split_checkpoint_survives_a_truncated_side(tmp_path: Path) -> None:
+    """A kill between the chosen and rejected write must not misalign the pairs."""
+    ckpt = tmp_path / "partial.json"
+    ckpt.write_text(json.dumps({"chosen": [1.0, 2.0, 3.0], "rejected": [1.0, 2.0]}), "utf-8")
+    chosen, rejected = run_accuracy.score_split(
+        _FakeScorer(), _fake_pairs(8), batch_size=8, checkpoint=ckpt  # type: ignore[arg-type]
+    )
+    assert len(chosen) == len(rejected) == 8
