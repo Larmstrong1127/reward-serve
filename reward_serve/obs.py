@@ -63,6 +63,7 @@ from opentelemetry.sdk.trace.export import (
     SpanExporter,
 )
 from opentelemetry.trace import Link, Span, SpanContext, Tracer
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 from prometheus_client import generate_latest as _generate_latest
 from prometheus_client.exposition import CONTENT_TYPE_LATEST
@@ -74,10 +75,15 @@ __all__ = [
     "QUEUE_WAIT_BUCKETS",
     "Metrics",
     "ObsHooks",
+    "RouterMetrics",
     "documented_buckets",
     "metrics_payload",
     "mount_metrics",
+    "render_registry",
+    "extract_trace_context",
+    "inject_trace_context",
     "setup_metrics",
+    "setup_router_metrics",
     "setup_tracing",
 ]
 
@@ -253,7 +259,12 @@ def setup_metrics(registry: CollectorRegistry | None = None) -> Metrics:
 
 def metrics_payload(metrics: Metrics) -> tuple[bytes, str]:
     """Render the registry to the Prometheus text format, with its content type."""
-    return _generate_latest(metrics.registry), CONTENT_TYPE_LATEST
+    return render_registry(metrics.registry)
+
+
+def render_registry(registry: CollectorRegistry) -> tuple[bytes, str]:
+    """Render any registry, so the router can expose its own series."""
+    return _generate_latest(registry), CONTENT_TYPE_LATEST
 
 
 def mount_metrics(app: Any, metrics: Metrics, path: str = "/metrics") -> None:
@@ -317,15 +328,24 @@ class ObsHooks:
 
     # -- request scope ----------------------------------------------------
     @contextmanager
-    def request_span(self, name: str = "score.request", **attrs: Any) -> Iterator[Span]:
+    def request_span(
+        self, name: str = "score.request", *, parent: Context | None = None, **attrs: Any
+    ) -> Iterator[Span]:
         """Root span for one HTTP request, plus its end-to-end latency sample.
 
         The latency histogram is observed here rather than in ``on_complete``
         because this is the client-visible number: it covers request parsing and
         response assembly too, not only the queue and the forward pass.
+
+        ``parent`` carries a context extracted from an inbound ``traceparent``
+        header. When the worker sits behind the router this makes the request
+        span a child of the router's span instead of a new root, so one trace
+        spans router -> worker -> batch. When nothing upstream sent a
+        traceparent the parent is ``None`` and the span is a root, which is
+        exactly the single-tier behaviour.
         """
         started = time.perf_counter()
-        with self._get_tracer().start_as_current_span(name) as span:
+        with self._get_tracer().start_as_current_span(name, context=parent) as span:
             for key, value in attrs.items():
                 span.set_attribute(key, value)
             try:
@@ -520,9 +540,100 @@ def instrument_app(
     async def _trace_requests(request: Any, call_next: Any) -> Any:
         if not request.url.path.startswith(traced_paths):
             return await call_next(request)
-        with hooks.request_span("score.request", **{"http.route": request.url.path}) as span:
+        parent = extract_trace_context(dict(request.headers))
+        with hooks.request_span(
+            "score.request", parent=parent, **{"http.route": request.url.path}
+        ) as span:
             response = await call_next(request)
             span.set_attribute("http.status_code", response.status_code)
             return response
 
     app.middleware("http")(_trace_requests)
+
+
+# ---------------------------------------------------------------------------
+# Router tier
+# ---------------------------------------------------------------------------
+# The router is a second process in front of the workers, so its series are
+# named rs_router_* and live on their own registry. They are deliberately few:
+# a state gauge, a retry counter, and an upstream latency histogram per worker.
+# Everything else worth knowing about a request is already on the worker.
+#
+# rs_router_upstream_state is an enum encoded as a number because Prometheus
+# has no string values. The encoding is fixed here and documented in
+# docs/multi-tier.md: 0 = DOWN, 1 = SUSPECT, 2 = UP. A dashboard reads
+# `min_over_time(rs_router_upstream_state[5m]) < 2` to find a flapping worker.
+UPSTREAM_STATE_CODES: dict[str, int] = {"DOWN": 0, "SUSPECT": 1, "UP": 2}
+
+# Upstream latency measures router -> worker -> router for one attempt. Its
+# edges extend past the worker's own LATENCY_BUCKETS because a fault-injected
+# worker is expected to sit at seconds, and the router timeout (default 3 s)
+# has to land on an edge so timed-out attempts do not smear.
+UPSTREAM_LATENCY_BUCKETS: tuple[float, ...] = (
+    0.010, 0.025, 0.050, 0.100, 0.200, 0.350, 0.500, 0.750,
+    1.000, 2.000, 3.000, 5.000, 10.000, float("inf"),
+)
+
+
+@dataclass
+class RouterMetrics:
+    """The four series the router publishes on /metrics."""
+
+    registry: CollectorRegistry
+    upstream_state: Gauge
+    retries_total: Counter
+    upstream_latency_seconds: Histogram
+    requests_total: Counter
+
+
+def setup_router_metrics(registry: CollectorRegistry | None = None) -> RouterMetrics:
+    """Build the router metric set on a private registry."""
+    reg = registry if registry is not None else CollectorRegistry()
+    return RouterMetrics(
+        registry=reg,
+        upstream_state=Gauge(
+            "rs_router_upstream_state",
+            "Health state of one worker as seen by the router: 0 DOWN, 1 SUSPECT, 2 UP.",
+            ["worker"],
+            registry=reg,
+        ),
+        retries_total=Counter(
+            "rs_router_retries",
+            "Requests retried on a second worker after a pre-send connection failure.",
+            registry=reg,
+        ),
+        upstream_latency_seconds=Histogram(
+            "rs_router_upstream_latency_seconds",
+            "Wall time of one router->worker attempt, including a failed one.",
+            ["worker"],
+            buckets=UPSTREAM_LATENCY_BUCKETS,
+            registry=reg,
+        ),
+        requests_total=Counter(
+            "rs_router_requests",
+            "Client-visible outcomes of routed requests, by status code.",
+            ["status"],
+            registry=reg,
+        ),
+    )
+
+
+def extract_trace_context(headers: dict[str, str]) -> Context | None:
+    """Turn an inbound ``traceparent`` header into a parent context, or None.
+
+    Returns None when no valid trace context is present so the caller starts a
+    root span. Header lookup is case-insensitive because the propagator expects
+    lowercase keys and ASGI does not guarantee them.
+    """
+    lowered = {k.lower(): v for k, v in headers.items()}
+    if "traceparent" not in lowered:
+        return None
+    ctx = TraceContextTextMapPropagator().extract(lowered)
+    span_ctx = trace.get_current_span(ctx).get_span_context()
+    return ctx if span_ctx.is_valid else None
+
+
+def inject_trace_context(headers: dict[str, str]) -> dict[str, str]:
+    """Add ``traceparent`` for the currently active span. Mutates and returns."""
+    TraceContextTextMapPropagator().inject(headers)
+    return headers

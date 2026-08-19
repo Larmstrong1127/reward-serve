@@ -73,6 +73,12 @@ class RequestRecord:
     # server-supplied code from an error body, e.g. "queue_full",
     # "deadline_exceeded", "draining", "not_ready" (contract section 2)
     error_code: str | None = None
+    # Multi-tier only. Populated from the router's response headers, so a fault
+    # run can say WHICH worker served a request and whether the router retried
+    # it. Both are None against a single-tier server, which sends no such
+    # headers -- the harness must keep working there unchanged.
+    served_by: str | None = None
+    retried: bool | None = None
 
     @property
     def latency_ms(self) -> float:
@@ -157,11 +163,15 @@ async def _one_request(
     status = 0
     body: dict[str, Any] = {}
     err: str | None = None
+    served_by: str | None = None
+    retried_hdr: str | None = None
     inflight.enter()
     try:
         async with client.stream("POST", url, json=payload) as resp:
             first_byte_ts = time.perf_counter()
             status = resp.status_code
+            served_by = resp.headers.get("x-rs-worker")
+            retried_hdr = resp.headers.get("x-rs-retried")
             raw = await resp.aread()
         if raw:
             try:
@@ -206,6 +216,8 @@ async def _one_request(
             score=_num("score"),
             error=err,
             error_code=error_code,
+            served_by=served_by,
+            retried=None if retried_hdr is None else retried_hdr == "1",
         )
     )
 

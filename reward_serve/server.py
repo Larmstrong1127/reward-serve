@@ -7,7 +7,7 @@ import os
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 
 import asyncio  # noqa: E402
-from collections.abc import AsyncIterator  # noqa: E402
+from collections.abc import AsyncIterator, Callable  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 from dataclasses import dataclass  # noqa: E402
 from typing import Any  # noqa: E402
@@ -123,8 +123,14 @@ def create_app(
     scorer: Scorer | None = None,
     hooks: BatcherHooks | None = None,
     model_info: dict[str, Any] | None = None,
+    scorer_wrapper: Callable[[Scorer], Scorer] | None = None,
 ) -> FastAPI:
-    """Build the app. Pass `scorer` to run against a stub instead of the model."""
+    """Build the app. Pass `scorer` to run against a stub instead of the model.
+
+    `scorer_wrapper` wraps whichever scorer ends up active, before the batcher
+    sees it. The worker process uses it to interpose fault injection without
+    this module knowing that faults exist.
+    """
     cfg = settings or Settings.from_env()
     state = ServerState(cfg)
     if hooks is not None:
@@ -138,6 +144,8 @@ def create_app(
             active: Scorer = state.model
         else:
             active = scorer
+        if scorer_wrapper is not None:
+            active = scorer_wrapper(active)
         state.model_loaded = True
         state.batcher = ContinuousBatcher(
             active,
