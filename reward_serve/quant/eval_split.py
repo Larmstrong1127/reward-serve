@@ -68,7 +68,7 @@ def flatten_messages(messages: list[dict[str, Any]]) -> str:
 
 
 def _default_load_fn(split: str) -> Any:
-    import datasets  # type: ignore[import-not-found]
+    import datasets
 
     return datasets.load_dataset(ULTRAFEEDBACK_DATASET_ID, split=split)
 

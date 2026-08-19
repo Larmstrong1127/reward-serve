@@ -125,7 +125,7 @@ def load_int8_dynamic(model_id: str = DEFAULT_MODEL_ID) -> RewardModel:
     server can adopt with no data plumbing at all.
     """
     scorer = RewardModel(model_id)
-    scorer.model = torch.ao.quantization.quantize_dynamic(
+    scorer.model = torch.ao.quantization.quantize_dynamic(  # type: ignore[no-untyped-call]
         scorer.model, {nn.Linear}, dtype=torch.qint8
     )
     scorer.model.eval()
@@ -164,7 +164,7 @@ def attempt_int8_static(
         return {"input_ids": enc["input_ids"], "attention_mask": enc["attention_mask"]}
 
     example = encode(calibration_pairs[:1])
-    qconfig_mapping = {"": get_default_qconfig("x86")}
+    qconfig_mapping = {"": get_default_qconfig("x86")}  # type: ignore[no-untyped-call]
     try:
         prepared = prepare_fx(
             scorer.model,
