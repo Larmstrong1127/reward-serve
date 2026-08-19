@@ -7,6 +7,7 @@ Writes a JSON report and exits 0 on PASS, 1 on FAIL. Sweeps must import
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shutil
@@ -41,12 +42,14 @@ def measure(window_s: int = WINDOW_S) -> dict:
     cpu_samples: list[float] = []
     gpu_samples: list[int] = []
     other_py: dict[int, list[float]] = {}
-    procs = {p.pid: p for p in psutil.process_iter(["name"]) if (p.info["name"] or "").lower().startswith("python") and p.pid != me}
+    procs = {
+        p.pid: p
+        for p in psutil.process_iter(["name"])
+        if (p.info["name"] or "").lower().startswith("python") and p.pid != me
+    }
     for p in procs.values():
-        try:
+        with contextlib.suppress(Exception):
             p.cpu_percent(None)
-        except Exception:
-            pass
     end = time.time() + window_s
     while time.time() < end:
         cpu_samples.append(psutil.cpu_percent(interval=1))
@@ -54,13 +57,15 @@ def measure(window_s: int = WINDOW_S) -> dict:
         if g is not None:
             gpu_samples.append(g)
         for pid, p in procs.items():
-            try:
+            with contextlib.suppress(Exception):
                 other_py.setdefault(pid, []).append(p.cpu_percent(None) / psutil.cpu_count())
-            except Exception:
-                pass
     cpu_mean = sum(cpu_samples) / len(cpu_samples)
     gpu_max = max(gpu_samples) if gpu_samples else None
-    hot_py = {pid: sum(v) / len(v) for pid, v in other_py.items() if v and sum(v) / len(v) > OTHER_PY_MAX}
+    hot_py = {
+        pid: sum(v) / len(v)
+        for pid, v in other_py.items()
+        if v and sum(v) / len(v) > OTHER_PY_MAX
+    }
     passed = cpu_mean < CPU_MAX and (gpu_max is None or gpu_max < GPU_MAX) and not hot_py
     return {
         "passed": passed,

@@ -14,8 +14,6 @@ from conftest import StubScorer, wait_until
 from reward_serve.server import Settings, create_app
 
 
-
-
 async def test_healthz_and_readyz_semantics(stub: StubScorer) -> None:
     settings = Settings(max_batch_size=4, max_wait_ms=5)
     app = create_app(settings, scorer=stub)

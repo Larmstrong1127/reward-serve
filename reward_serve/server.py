@@ -21,8 +21,8 @@ from reward_serve.batcher import (  # noqa: E402
     ContinuousBatcher,
     DeadlineExceeded,
     QueueFullError,
-    ScoreResult,
     Scorer,
+    ScoreResult,
 )
 from reward_serve.model import DEFAULT_MODEL_ID, RewardModel  # noqa: E402
 

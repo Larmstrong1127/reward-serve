@@ -43,7 +43,8 @@ def main(root: Path) -> int:
                 print(f"{path.relative_to(root)}:{n}: {line}")
                 failures += 1
     if failures:
-        print(f"\nvocab_gate: {failures} line(s) claim scale this project cannot back", file=sys.stderr)
+        msg = f"\nvocab_gate: {failures} line(s) claim scale this project cannot back"
+        print(msg, file=sys.stderr)
         return 1
     print("vocab_gate: clean")
     return 0

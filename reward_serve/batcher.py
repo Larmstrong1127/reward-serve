@@ -9,8 +9,8 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Protocol
+from enum import StrEnum
+from typing import Any, Protocol
 
 __all__ = [
     "BatcherHooks",
@@ -23,7 +23,7 @@ __all__ = [
 ]
 
 
-class Status(str, Enum):
+class Status(StrEnum):
     """Terminal state of an accepted item. Mirrors the contract."""
 
     OK = "ok"
@@ -169,7 +169,7 @@ class ContinuousBatcher:
         if task is not None:
             try:
                 await asyncio.wait_for(asyncio.shield(task), timeout=5.0)
-            except (TimeoutError, asyncio.TimeoutError, asyncio.CancelledError):
+            except (TimeoutError, asyncio.CancelledError):
                 task.cancel()
         while not self._queue.empty():
             item = self._queue.get_nowait()
@@ -225,10 +225,11 @@ class ContinuousBatcher:
 
     async def _next_item(self) -> _Item | None:
         """Wait for one item while staying responsive to stop()."""
-        getter: asyncio.Future[_Item] = asyncio.ensure_future(self._queue.get())
-        stopper: asyncio.Future[bool] = asyncio.ensure_future(self._stop.wait())
+        getter: asyncio.Task[_Item] = asyncio.ensure_future(self._queue.get())
+        stopper: asyncio.Task[bool] = asyncio.ensure_future(self._stop.wait())
+        waiting: set[asyncio.Task[Any]] = {getter, stopper}
         try:
-            await asyncio.wait({getter, stopper}, return_when=asyncio.FIRST_COMPLETED)
+            await asyncio.wait(waiting, return_when=asyncio.FIRST_COMPLETED)
         finally:
             stopper.cancel()
         if getter.done():
@@ -247,7 +248,7 @@ class ContinuousBatcher:
                 break
             try:
                 batch.append(await asyncio.wait_for(self._queue.get(), remaining))
-            except (TimeoutError, asyncio.TimeoutError):
+            except TimeoutError:
                 break
         return batch
 
