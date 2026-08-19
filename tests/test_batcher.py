@@ -156,3 +156,32 @@ async def test_drain_completes_queued_work(stub: StubScorer) -> None:
     assert not b.accepting
     with pytest.raises(QueueFullError):
         await b.submit("after", "drain")
+
+
+async def test_backlog_is_batched_not_drained_one_at_a_time() -> None:
+    """A queue that built up during a slow forward pass flushes as one batch.
+
+    Regression: the wait window is anchored to the oldest item's enqueue time,
+    so under a backlog that window has already expired. An implementation that
+    only ever waits, and never sweeps what is already queued, forwards batches
+    of one while a full queue sits behind it.
+    """
+    slow = StubScorer(delay_s=0.2)
+    b = await _started(slow, max_batch_size=8, max_wait_ms=5, request_timeout_ms=30_000)
+    try:
+        # First item occupies the loop; the rest pile up behind it.
+        head = asyncio.create_task(b.submit("head", "r"))
+        assert await wait_until(lambda: bool(slow.batches), timeout=2.0)
+
+        backlog = [asyncio.create_task(b.submit(f"q{i}", "r")) for i in range(6)]
+        assert await wait_until(lambda: b.depth == 6, timeout=2.0)
+
+        await head
+        results = await asyncio.gather(*backlog)
+    finally:
+        await b.stop()
+
+    assert slow.batch_sizes == [1, 6], (
+        f"backlog was not batched: forward passes were {slow.batch_sizes}"
+    )
+    assert all(r.batch_size == 6 for r in results)

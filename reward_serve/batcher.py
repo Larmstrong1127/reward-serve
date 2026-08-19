@@ -241,6 +241,20 @@ class ContinuousBatcher:
         """Pack until max_batch_size items wait, or the oldest hits max_wait_ms."""
         loop = asyncio.get_running_loop()
         batch = [first]
+
+        # Take whatever is already queued first. These items cost no waiting,
+        # and under a backlog the oldest item's wait window has usually already
+        # expired -- skipping this step would forward a batch of one while a
+        # full queue sits behind it.
+        while len(batch) < self.max_batch_size:
+            try:
+                batch.append(self._queue.get_nowait())
+            except asyncio.QueueEmpty:
+                break
+        if len(batch) >= self.max_batch_size:
+            return batch
+
+        # Only now spend real time waiting for the batch to grow.
         flush_at = first.enqueued_at + self.max_wait_s
         while len(batch) < self.max_batch_size:
             remaining = flush_at - loop.time()

@@ -11,6 +11,15 @@ comes first:
 - **Size trigger.** `max_batch_size` items are in hand.
 - **Wait trigger.** The *oldest* item in the batch has waited `max_wait_ms`.
 
+Before it waits on anything, the loop sweeps whatever is already sitting in
+the queue into the batch. This matters more than it sounds. Under a backlog
+the oldest item's wait window has usually already expired by the time the loop
+reaches it, so a loop that only ever *waits* for new arrivals concludes there
+is no time left and forwards a batch of one, while a full queue sits behind
+it. The first dry run of this server did exactly that: ten concurrent requests
+each came back with `batch_size` 1 and a queue wait climbing to 719 ms.
+`test_backlog_is_batched_not_drained_one_at_a_time` pins the fixed behaviour.
+
 The deadline for the wait trigger is pinned to the first item's enqueue time,
 not refreshed as later items arrive. A steady trickle of arrivals therefore
 cannot keep a batch open indefinitely, which is the starvation bug this
