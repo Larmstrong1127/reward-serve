@@ -391,6 +391,13 @@ the router, and none of which need the worker to cooperate.
   box being quiet, but the *durations* between them do: on an idle box every
   elapsed time above would likely be shorter. Treat "+8.91 s to breaker OPEN"
   as an upper bound of that shape, not a constant.
+* **The committed `box_quiet.json` files were written by the previous version
+  of `scripts/box_quiet.py`** (commit `74acb51`), before its GPU rule was
+  recalibrated on `main` to test held memory rather than a raw utilisation
+  ceiling. The CPU rule is identical in both versions, and CPU is what failed
+  every one of these runs — 40.9%–50.6% against a 15% ceiling — so the verdict
+  is unchanged, but a reader rerunning `faults/run_faults.py` today will get a
+  report with different GPU keys in it.
 * **State transitions are observations at 100 ms sampling**, taken from
   `/routerz` polls, not from the router's internal transition log. Any timestamp
   in the tables above is late by up to one sample interval.
