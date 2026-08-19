@@ -103,7 +103,10 @@ start on a contended box (`scripts/box_quiet.py`, charter rule 3), and writes
 > from a browser or a chat client clears 10%. As written, that condition cannot
 > be met on this machine while anyone is logged in: it does not gate a
 > measurement, it blocks one — permanently, and for the load sweeps in
-> `loadgen/` exactly as much as for this document. The same run caught host CPU
+> `loadgen/` exactly as much as for this document. That is not a prediction:
+> `results/2026-08-18-cpu-batch-grid/` on main holds a box-quiet report reading
+> `"passed": false` and no sweep data beside it, so the load harness hit the
+> same wall independently. The same run caught host CPU
 > at 54–75%, which is real contention from the sibling agents, and there the
 > gate is working correctly.
 >
