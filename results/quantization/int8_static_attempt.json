@@ -1,0 +1,17 @@
+{
+  "_comment": "Record of an attempt at int8 static post-training quantization. If 'succeeded' is false, no static accuracy number exists in this study and none should be quoted.",
+  "model_id": "DantheMan124/deberta-preference-reward",
+  "torch_api_attempted": "torch.ao.quantization.quantize_fx.prepare_fx(...) -> calibrate -> convert_fx(...)",
+  "calibration_split": "UltraFeedback train_prefs",
+  "calibration_n_pairs": 256,
+  "calibration_side": "chosen response",
+  "calibration_disjoint_from_eval": "yes - the eval split is test_prefs; no pair is shared with train_prefs",
+  "device": "cpu",
+  "torch_version": "2.13.0+cpu",
+  "transformers_version": "5.15.0",
+  "python_version": "3.11.15",
+  "elapsed_s": 2.59,
+  "succeeded": false,
+  "reason": "prepare_fx failed: ValueError: You cannot specify both input_ids and inputs_embeds at the same time",
+  "command": "python -m reward_serve.quant.probe_static"
+}

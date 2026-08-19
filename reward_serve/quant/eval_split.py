@@ -31,18 +31,22 @@ from dataclasses import dataclass  # noqa: E402
 from typing import Any  # noqa: E402
 
 __all__ = [
+    "CALIBRATION_SPLIT",
     "PUBLISHED_FP32_ACCURACY",
     "PUBLISHED_N_PAIRS",
     "ULTRAFEEDBACK_DATASET_ID",
     "AuditStats",
     "PreferencePair",
     "audit_and_filter_pairs",
+    "load_calibration_pairs",
     "load_eval_pairs",
     "load_ultrafeedback_pairs",
 ]
 
 ULTRAFEEDBACK_DATASET_ID = "HuggingFaceH4/ultrafeedback_binarized"
 EVAL_SPLIT = "test_prefs"
+# Calibration data must never touch the split the accuracies are measured on.
+CALIBRATION_SPLIT = "train_prefs"
 
 # The anchor. If the fp32 variant does not reproduce this on this split, the
 # study is measuring something other than the shipped model and must stop.
@@ -132,3 +136,28 @@ def load_eval_pairs(
     if limit is not None:
         kept = kept[:limit]
     return kept, stats
+
+
+def load_calibration_pairs(
+    tokenizer: Any,
+    max_length: int,
+    n_pairs: int = 256,
+    load_fn: Callable[[str], Any] = _default_load_fn,
+) -> list[PreferencePair]:
+    """Calibration pairs, held out of the eval split by construction.
+
+    Drawn from `train_prefs`, not `test_prefs`, so no calibration pair can be
+    one of the 1,987 evaluated pairs. The same truncation filter is applied, so
+    calibration sees the same shape of input the server will. Filtering stops as
+    soon as `n_pairs` survive - the training split has tens of thousands of rows
+    and auditing all of them would cost more than the calibration itself.
+    """
+    kept: list[PreferencePair] = []
+    for pair in load_ultrafeedback_pairs(CALIBRATION_SPLIT, load_fn=load_fn):
+        one, stats = audit_and_filter_pairs([pair], tokenizer, max_length)
+        if stats.dropped_identical:
+            continue
+        kept.extend(one)
+        if len(kept) >= n_pairs:
+            break
+    return kept[:n_pairs]
