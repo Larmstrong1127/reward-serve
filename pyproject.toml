@@ -59,3 +59,6 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "slow: spawns real processes and waits for sockets; the multi-tier integration checks",
+]
