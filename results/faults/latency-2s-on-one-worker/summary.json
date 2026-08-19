@@ -1,6 +1,6 @@
 {
   "scenario": "latency-2s-on-one-worker",
-  "measured_at": "2026-08-18T21:55:10",
+  "measured_at": "2026-08-18T22:01:41",
   "model": "DantheMan124/deberta-preference-reward",
   "tier": {
     "workers": 2,
@@ -16,11 +16,11 @@
   "sampling_interval_s": 0.1,
   "injections": [
     {
-      "t": 8.0015,
+      "t": 8.0079,
       "what": "inject latency 2000 ms on B"
     },
     {
-      "t": 26.0236,
+      "t": 26.0652,
       "what": "clear fault on B"
     }
   ],
@@ -34,148 +34,154 @@
   "cleared_at_s": 26.0,
   "phases": {
     "before": {
-      "n": 38,
-      "n_ok": 38,
-      "p50_ms": 428.635,
-      "p99_ms": 2420.275,
-      "max_ms": 2420.275,
+      "n": 17,
+      "n_ok": 17,
+      "p50_ms": 748.894,
+      "p99_ms": 1360.439,
+      "max_ms": 1360.439,
       "statuses": {
-        "200": 38
+        "200": 17
       },
-      "share_A": 0.5526
+      "share_A": 0.6471
     },
     "during": {
-      "n": 116,
-      "n_ok": 110,
-      "p50_ms": 276.638,
-      "p99_ms": 1070.661,
-      "max_ms": 1075.296,
+      "n": 134,
+      "n_ok": 128,
+      "p50_ms": 351.334,
+      "p99_ms": 2346.899,
+      "max_ms": 2752.976,
       "statuses": {
-        "200": 110,
+        "200": 128,
         "504": 6
       },
-      "share_A": 0.9483
+      "share_A": 0.9403
     },
     "after": {
-      "n": 65,
-      "n_ok": 65,
-      "p50_ms": 860.533,
-      "p99_ms": 1083.27,
-      "max_ms": 1083.27,
+      "n": 116,
+      "n_ok": 116,
+      "p50_ms": 458.107,
+      "p99_ms": 971.274,
+      "max_ms": 990.895,
       "statuses": {
-        "200": 65
+        "200": 116
       },
-      "share_A": 1.0
+      "share_A": 0.5
     }
   },
   "share_of_A_over_time": [
     {
       "t_start": 4.0,
-      "n": 18,
-      "n_named": 18,
-      "share_A": 0.6111
+      "n": 10,
+      "n_named": 10,
+      "share_A": 0.7
     },
     {
       "t_start": 6.0,
-      "n": 20,
-      "n_named": 20,
-      "share_A": 0.5
+      "n": 7,
+      "n_named": 7,
+      "share_A": 0.5714
     },
     {
       "t_start": 8.0,
-      "n": 19,
-      "n_named": 19,
-      "share_A": 0.9474
+      "n": 12,
+      "n_named": 12,
+      "share_A": 0.8333
     },
     {
       "t_start": 10.0,
-      "n": 21,
-      "n_named": 21,
-      "share_A": 0.9048
+      "n": 11,
+      "n_named": 11,
+      "share_A": 0.8182
     },
     {
       "t_start": 12.0,
-      "n": 19,
-      "n_named": 19,
-      "share_A": 0.9474
+      "n": 11,
+      "n_named": 11,
+      "share_A": 0.9091
     },
     {
       "t_start": 14.0,
-      "n": 12,
-      "n_named": 12,
-      "share_A": 0.9167
-    },
-    {
-      "t_start": 16.0,
       "n": 10,
       "n_named": 10,
       "share_A": 0.9
     },
     {
+      "t_start": 16.0,
+      "n": 14,
+      "n_named": 14,
+      "share_A": 0.9286
+    },
+    {
       "t_start": 18.0,
-      "n": 8,
-      "n_named": 8,
+      "n": 13,
+      "n_named": 13,
       "share_A": 1.0
     },
     {
       "t_start": 20.0,
-      "n": 8,
-      "n_named": 8,
+      "n": 15,
+      "n_named": 15,
       "share_A": 1.0
     },
     {
       "t_start": 22.0,
-      "n": 8,
-      "n_named": 8,
+      "n": 21,
+      "n_named": 21,
       "share_A": 1.0
     },
     {
       "t_start": 24.0,
-      "n": 11,
-      "n_named": 11,
-      "share_A": 1.0
+      "n": 27,
+      "n_named": 27,
+      "share_A": 0.963
     },
     {
       "t_start": 26.0,
-      "n": 9,
-      "n_named": 9,
-      "share_A": 1.0
+      "n": 19,
+      "n_named": 19,
+      "share_A": 0.7368
     },
     {
       "t_start": 28.0,
-      "n": 8,
-      "n_named": 8,
-      "share_A": 1.0
+      "n": 17,
+      "n_named": 17,
+      "share_A": 0.4706
     },
     {
       "t_start": 30.0,
-      "n": 11,
-      "n_named": 11,
-      "share_A": 1.0
+      "n": 16,
+      "n_named": 16,
+      "share_A": 0.4375
     },
     {
       "t_start": 32.0,
-      "n": 9,
-      "n_named": 9,
-      "share_A": 1.0
+      "n": 13,
+      "n_named": 13,
+      "share_A": 0.3846
     },
     {
       "t_start": 34.0,
-      "n": 8,
-      "n_named": 8,
-      "share_A": 1.0
+      "n": 18,
+      "n_named": 18,
+      "share_A": 0.3889
     },
     {
       "t_start": 36.0,
-      "n": 11,
-      "n_named": 11,
-      "share_A": 1.0
+      "n": 18,
+      "n_named": 18,
+      "share_A": 0.5
     },
     {
       "t_start": 38.0,
-      "n": 9,
-      "n_named": 9,
-      "share_A": 1.0
+      "n": 14,
+      "n_named": 14,
+      "share_A": 0.5714
+    },
+    {
+      "t_start": 40.0,
+      "n": 1,
+      "n_named": 1,
+      "share_A": 0.0
     }
   ],
   "router_timeouts_504": 6,
@@ -183,24 +189,34 @@
   "B_stayed_UP_throughout": true,
   "router_state_transitions_B": [
     {
-      "t": 0.0139,
+      "t": 0.0203,
       "state": "UP",
       "breaker": "CLOSED"
     },
     {
-      "t": 17.3188,
+      "t": 17.4026,
       "state": "UP",
       "breaker": "OPEN"
+    },
+    {
+      "t": 24.862,
+      "state": "UP",
+      "breaker": "HALF_OPEN"
+    },
+    {
+      "t": 27.2214,
+      "state": "UP",
+      "breaker": "CLOSED"
     }
   ],
   "status_counts": {
-    "200": 213,
+    "200": 261,
     "504": 6
   },
   "latency": {
-    "n_ok": 213,
-    "p50_ms": 593.388,
-    "p99_ms": 1075.296,
-    "max_ms": 2420.275
+    "n_ok": 261,
+    "p50_ms": 412.856,
+    "p99_ms": 1360.439,
+    "max_ms": 2752.976
   }
 }

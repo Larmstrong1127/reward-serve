@@ -1,0 +1,64 @@
+{
+  "scenario": "queue-exhaustion",
+  "measured_at": "2026-08-18T22:02:44",
+  "model": "DantheMan124/deberta-preference-reward",
+  "tier": {
+    "workers": 2,
+    "router_timeout_ms": 3000.0,
+    "queue_depth": 4,
+    "max_batch_size": 8,
+    "concurrency": 16,
+    "duration_s": 16.0,
+    "warmup_s": 3.0
+  },
+  "box_quiet_passed": false,
+  "latency_figures_are_indicative_only": true,
+  "sampling_interval_s": 0.1,
+  "injections": [
+    {
+      "t": 0.0005,
+      "what": "steady overload at concurrency 16 against QUEUE_DEPTH=4"
+    }
+  ],
+  "question": "is a 429 treated as a worker failure (it must not be)",
+  "queue_depth": 4,
+  "concurrency": 16,
+  "requests_measured": 284,
+  "http_429": 0,
+  "rate_429": 0.0,
+  "status_counts": {
+    "200": 284
+  },
+  "served_split": {
+    "B": 140,
+    "A": 144
+  },
+  "any_sample_where_a_worker_was_not_UP": false,
+  "any_sample_where_a_breaker_was_not_CLOSED": false,
+  "samples_per_worker": {
+    "A": 180,
+    "B": 180
+  },
+  "router_state_transitions_A": [
+    {
+      "t": 0.0203,
+      "state": "UP",
+      "breaker": "CLOSED"
+    }
+  ],
+  "router_state_transitions_B": [
+    {
+      "t": 0.0203,
+      "state": "UP",
+      "breaker": "CLOSED"
+    }
+  ],
+  "router_retries_total": 0.0,
+  "decision": "429 is not counted as an upstream failure. A worker answering 429 is healthy and refusing work it cannot queue; ejecting it would move the whole offered load onto the other worker and turn shed load into an outage. See Upstream.record_request_result.",
+  "latency": {
+    "n_ok": 284,
+    "p50_ms": 879.265,
+    "p99_ms": 1182.881,
+    "max_ms": 1191.171
+  }
+}

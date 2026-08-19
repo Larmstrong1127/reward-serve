@@ -19,7 +19,12 @@ below is scoped to what has actually been run.
 | A request cancelled in the queue is never forwarded; a request past its deadline is never scored | `pytest tests/test_batcher.py -k "deadline or cancelled"` |
 | A full queue answers 429 immediately; a drain loses no in-flight request | `pytest tests/test_server.py -k "429 or drain"` |
 | One request's trace names the batch it rode in and every sibling in it | [`results/trace_batch_link_structure.json`](results/trace_batch_link_structure.json) — `batch.forward` carries `batch.size=8` and 8 span links |
-| 98 tests, `ruff`, `mypy --strict`, and the vocabulary gate pass | `pytest -q && ruff check . && mypy --strict reward_serve loadgen && python scripts/vocab_gate.py .` |
+| A router and two worker processes come up, split ten requests 5/5, and one trace id spans router → worker → batch | `python scripts/tier_dry_run.py` → [`results/multi-tier-dry-run/dry_run.json`](results/multi-tier-dry-run/dry_run.json) |
+| Killing a worker mid-batch loses only the 2 requests already on its wire; the other 187 sent afterwards all succeed, and traffic converges on the survivor in 93 ms | [`results/faults/kill-worker-mid-batch/summary.json`](results/faults/kill-worker-mid-batch/summary.json) |
+| A worker made 2 s slow stays `UP` in every health sample — the routing rule, not the health check, moves 100% of load off it | [`results/faults/latency-2s-on-one-worker/summary.json`](results/faults/latency-2s-on-one-worker/summary.json) |
+| 1297 rejections (95.2% of offered load) open no circuit breaker and move no worker out of `UP` | [`results/faults/queue-exhaustion/summary.json`](results/faults/queue-exhaustion/summary.json) |
+| A wedged worker is never marked down — `/readyz` still answers 200 — but nothing waits past the router's 3 s budget: max observed 3023.9 ms | [`results/faults/hang-worker/summary.json`](results/faults/hang-worker/summary.json) |
+| 142 tests, `ruff`, `mypy --strict`, and the vocabulary gate pass | `pytest -q && ruff check . && mypy --strict reward_serve loadgen && python scripts/vocab_gate.py .` |
 
 ## What has not been run — and why it is not in the table
 
@@ -41,7 +46,13 @@ The docker stack under `docker/` (server, OTel collector, Prometheus,
 Grafana with a committed dashboard) is validated structurally by tests, not
 brought up: Docker is not installed on this machine.
 
-## Three bugs the tests did not catch and the runs did
+The fault runs above ran on a contended box on purpose: they answer behavioural
+questions, not latency ones. Every one of their `summary.json` files carries
+`"latency_figures_are_indicative_only": true` beside a `box_quiet.json`, set by
+the runner rather than by hand, and [`docs/multi-tier.md`](docs/multi-tier.md)
+quotes latency from them only as an order of magnitude.
+
+## Five bugs the tests did not catch and the runs did
 
 1. **The batcher forwarded a backlog one item at a time.** Its wait window
    was anchored to the oldest item's enqueue time, so under a backlog the
@@ -58,15 +69,32 @@ brought up: Docker is not installed on this machine.
 3. **Dropped items leaked the observability FIFO.** Timed-out and cancelled
    items were removed before `on_batch_start`, so the queue-depth gauge
    drifted upward forever and later batches linked the wrong request spans.
+4. **The router's one retry worked but cost more than the failure.** Connecting
+   to the port of a terminated worker took ~2.3 s to be refused on this box, so
+   the two retried requests cost 2.54 s and 2.79 s against a p50 of 0.41 s.
+   Connect now has its own 250 ms budget separate from the 3 s request budget,
+   and retried requests cost 464–516 ms. The pre-fix run is committed at
+   `results/faults/kill-worker-mid-batch-before-connect-timeout/`.
+5. **A circuit breaker that opened could never close.** Routing filtered on the
+   raw breaker state instead of calling the check that moves OPEN to HALF_OPEN,
+   so no worker was ever offered its probe and a tripped worker stayed ejected
+   for the life of the process. The unit tests passed because they drove the
+   breaker directly; the regression test now drives recovery through `pick`.
+   Visible in `results/faults/latency-2s-on-one-worker-before-breaker-recovery/`
+   as a worker whose share of traffic never returns after its fault is cleared.
 
 ## Layout
 
     reward_serve/   model.py (sequence budget read from the checkpoint config,
-                    never hardcoded), batcher.py, server.py, obs.py
+                    never hardcoded), batcher.py, server.py, obs.py,
+                    router.py + worker.py (the two tiers), faults.py
+    faults/         run_faults.py: the four fault-injection scenarios
     loadgen/        open- and closed-loop generator, exact percentiles, gated sweep
-    scripts/        box_quiet.py, vocab_gate.py, dry runs, plot_sweep.py
+    scripts/        box_quiet.py, vocab_gate.py, dry runs, plot_sweep.py,
+                    tier_up.py (start/stop router + N workers)
     results/        committed artifacts, each with its box_quiet report
     docs/           contract.md, design-batcher.md, slo.md, observability.md,
+                    multi-tier.md (router design + the four fault runs),
                     knee-analysis.md (method written; findings pending the sweep)
     docker/         compose for server + collector + Prometheus + Grafana
 
@@ -79,10 +107,24 @@ brought up: Docker is not installed on this machine.
     .venv/Scripts/python -m reward_serve --port 8000
     .venv/Scripts/python scripts/dry_run.py --url http://127.0.0.1:8000
 
+Two tiers — one router in front of two worker processes on the same machine:
+
+    .venv/Scripts/python scripts/tier_up.py --workers 2
+    .venv/Scripts/python scripts/tier_dry_run.py
+    .venv/Scripts/python faults/run_faults.py
+    .venv/Scripts/python scripts/tier_up.py --down
+
 ## Not done
 
-Multi-process serving, fault injection, incident write-ups, and a
-quantization study are planned and not started. Cancellation after batch
-assembly begins still scores the item and discards the result. There is one
-worker process, no request priority, and no length bucketing. This is not a
-service for many users and it is not distributed; it is one box.
+A quantization study is planned and not started. Cancellation after batch
+assembly begins still scores the item and discards the result. There is no
+request priority and no length bucketing.
+
+On the router tier specifically: the routing rule is not corrected for
+fast-failing workers — it concentrated 66.8% of traffic on a worker that was
+refusing requests — `/readyz` still cannot see a wedged batching loop, the
+worker list is static configuration with no supervisor to restart a killed
+worker, and no scenario was run with more than two workers or run twice. The
+full list is in [`docs/multi-tier.md`](docs/multi-tier.md). This is not a
+service for many users and it is not distributed; it is one box running a
+handful of processes.

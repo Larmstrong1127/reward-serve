@@ -1,10 +1,7 @@
 {
   "scenarios": [
-    "kill-worker-mid-batch",
-    "latency-2s-on-one-worker",
-    "queue-exhaustion",
-    "hang-worker"
+    "queue-exhaustion"
   ],
-  "generated_at": "2026-08-18T21:57:30",
+  "generated_at": "2026-08-18T22:07:20",
   "command": "python faults/run_faults.py"
 }

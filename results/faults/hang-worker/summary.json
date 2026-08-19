@@ -1,6 +1,6 @@
 {
   "scenario": "hang-worker",
-  "measured_at": "2026-08-18T21:57:30",
+  "measured_at": "2026-08-18T22:03:59",
   "model": "DantheMan124/deberta-preference-reward",
   "tier": {
     "workers": 2,
@@ -16,11 +16,11 @@
   "sampling_interval_s": 0.1,
   "injections": [
     {
-      "t": 7.9905,
+      "t": 8.0005,
       "what": "inject hang on B"
     },
     {
-      "t": 31.0233,
+      "t": 31.032,
       "what": "clear hang on B so the drain can finish"
     }
   ],
@@ -30,39 +30,49 @@
     "kind": "hang"
   },
   "injected_at_s": 8.0,
-  "requests_after_injection": 226,
-  "router_timeouts_504_after_injection": 5,
+  "requests_after_injection": 126,
+  "router_timeouts_504_after_injection": 6,
   "requests_over_1_25x_router_timeout": 0,
-  "max_latency_ms": 3014.708,
+  "max_latency_ms": 3023.941,
   "router_timeout_ms": 3000.0,
   "B_first_seen_DOWN_at_s": null,
   "time_to_DOWN_s": null,
-  "B_first_seen_breaker_OPEN_at_s": 16.9091,
-  "time_to_breaker_OPEN_s": 8.909,
+  "B_first_seen_breaker_OPEN_at_s": 16.9101,
+  "time_to_breaker_OPEN_s": 8.91,
   "router_state_transitions_B": [
     {
-      "t": 0.0169,
+      "t": 0.0149,
       "state": "UP",
       "breaker": "CLOSED"
     },
     {
-      "t": 16.9091,
+      "t": 16.9101,
+      "state": "UP",
+      "breaker": "OPEN"
+    },
+    {
+      "t": 22.377,
+      "state": "UP",
+      "breaker": "HALF_OPEN"
+    },
+    {
+      "t": 25.3956,
       "state": "UP",
       "breaker": "OPEN"
     }
   ],
   "served_split_after_injection": {
-    "A": 221,
-    "B": 5
+    "A": 120,
+    "B": 6
   },
   "status_counts": {
-    "200": 255,
-    "504": 6
+    "200": 156,
+    "504": 7
   },
   "latency": {
-    "n_ok": 255,
-    "p50_ms": 333.01,
-    "p99_ms": 518.102,
-    "max_ms": 572.181
+    "n_ok": 156,
+    "p50_ms": 510.475,
+    "p99_ms": 1003.922,
+    "max_ms": 1010.727
   }
 }

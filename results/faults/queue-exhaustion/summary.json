@@ -1,12 +1,12 @@
 {
   "scenario": "queue-exhaustion",
-  "measured_at": "2026-08-18T21:56:14",
+  "measured_at": "2026-08-18T22:07:20",
   "model": "DantheMan124/deberta-preference-reward",
   "tier": {
     "workers": 2,
     "router_timeout_ms": 3000.0,
     "queue_depth": 4,
-    "max_batch_size": 8,
+    "max_batch_size": 2,
     "concurrency": 16,
     "duration_s": 16.0,
     "warmup_s": 3.0
@@ -17,45 +17,46 @@
   "injections": [
     {
       "t": 0.0,
-      "what": "steady overload at concurrency 16 against QUEUE_DEPTH=4"
+      "what": "steady overload at concurrency 16 against QUEUE_DEPTH=4, MAX_BATCH_SIZE=2"
     }
   ],
   "question": "is a 429 treated as a worker failure (it must not be)",
   "queue_depth": 4,
+  "max_batch_size": 2,
   "concurrency": 16,
-  "requests_measured": 1172,
-  "http_429": 1081,
-  "rate_429": 0.9224,
+  "requests_measured": 1363,
+  "http_429": 1297,
+  "rate_429": 0.9516,
   "status_counts": {
-    "429": 1081,
-    "504": 20,
-    "200": 71
+    "429": 1297,
+    "200": 42,
+    "504": 24
   },
   "served_split": {
-    "B": 1040,
-    "A": 132
+    "B": 452,
+    "A": 911
   },
+  "http_504": 24,
+  "breaker_openings_attributable_to_429": 0,
+  "breaker_note": "A 429 never increments a worker's failure counter, so no number of them can open a breaker; only the 504s in this run can. Asserted by tests/test_router.py::test_a_429_is_returned_untouched_and_is_not_a_failure.",
+  "share_served_by_busiest_worker": 0.6684,
+  "skew_note": "Least-outstanding-requests prefers whichever worker answers fastest, and a 429 is the fastest answer there is: a worker refusing work drops to zero outstanding instantly and is picked again immediately. Under shed load the rule therefore concentrates traffic on the worker doing the least useful work. Named, not fixed -- see docs/multi-tier.md.",
   "any_sample_where_a_worker_was_not_UP": false,
-  "any_sample_where_a_breaker_was_not_CLOSED": true,
+  "any_sample_where_a_breaker_was_not_CLOSED": false,
   "samples_per_worker": {
-    "A": 132,
-    "B": 132
+    "A": 157,
+    "B": 157
   },
   "router_state_transitions_A": [
     {
-      "t": 0.0213,
+      "t": 0.0198,
       "state": "UP",
       "breaker": "CLOSED"
-    },
-    {
-      "t": 14.4137,
-      "state": "UP",
-      "breaker": "OPEN"
     }
   ],
   "router_state_transitions_B": [
     {
-      "t": 0.0213,
+      "t": 0.0198,
       "state": "UP",
       "breaker": "CLOSED"
     }
@@ -63,9 +64,9 @@
   "router_retries_total": 0.0,
   "decision": "429 is not counted as an upstream failure. A worker answering 429 is healthy and refusing work it cannot queue; ejecting it would move the whole offered load onto the other worker and turn shed load into an outage. See Upstream.record_request_result.",
   "latency": {
-    "n_ok": 71,
-    "p50_ms": 496.434,
-    "p99_ms": 689.885,
-    "max_ms": 689.885
+    "n_ok": 42,
+    "p50_ms": 2299.395,
+    "p99_ms": 3005.064,
+    "max_ms": 3005.064
   }
 }

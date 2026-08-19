@@ -484,7 +484,10 @@ async def scenario_queue_exhaustion(run: ScenarioRun) -> dict[str, Any]:
     """Small queues, 16 clients: the workers should shed, not be ejected."""
 
     async def script(r: ScenarioRun) -> None:
-        r.note("steady overload at concurrency 16 against QUEUE_DEPTH=4")
+        r.note(
+            f"steady overload at concurrency {r.cfg.concurrency} against "
+            f"QUEUE_DEPTH={r.cfg.queue_depth}, MAX_BATCH_SIZE={r.cfg.max_batch_size}"
+        )
         await asyncio.sleep(r.cfg.duration_s + r.cfg.warmup_s + 1.0)
 
     await run.drive(script)
@@ -496,12 +499,30 @@ async def scenario_queue_exhaustion(run: ScenarioRun) -> dict[str, Any]:
     return {
         "question": "is a 429 treated as a worker failure (it must not be)",
         "queue_depth": run.cfg.queue_depth,
+        "max_batch_size": run.cfg.max_batch_size,
         "concurrency": run.cfg.concurrency,
         "requests_measured": len(rows),
         "http_429": n429,
         "rate_429": round(n429 / len(rows), 4) if rows else None,
         "status_counts": status_counts(rows),
         "served_split": served_split(rows),
+        "http_504": sum(1 for r in rows if r["status"] == 504),
+        "breaker_openings_attributable_to_429": 0,
+        "breaker_note": (
+            "A 429 never increments a worker's failure counter, so no number of "
+            "them can open a breaker; only the 504s in this run can. Asserted by "
+            "tests/test_router.py::test_a_429_is_returned_untouched_and_is_not_a_failure."
+        ),
+        "share_served_by_busiest_worker": (
+            round(max(served_split(rows).values()) / len(rows), 4) if rows else None
+        ),
+        "skew_note": (
+            "Least-outstanding-requests prefers whichever worker answers fastest, "
+            "and a 429 is the fastest answer there is: a worker refusing work "
+            "drops to zero outstanding instantly and is picked again immediately. "
+            "Under shed load the rule therefore concentrates traffic on the worker "
+            "doing the least useful work. Named, not fixed -- see docs/multi-tier.md."
+        ),
         "any_sample_where_a_worker_was_not_UP": any(
             s != "UP" for w in states for _, s, _ in states[w]
         ),
@@ -574,9 +595,18 @@ SCENARIOS: dict[str, tuple[ScenarioConfig, Any]] = {
         ScenarioConfig("latency-2s-on-one-worker", concurrency=4, duration_s=36.0, warmup_s=4.0),
         scenario_latency,
     ),
+    # MAX_BATCH_SIZE=2, not the default 8, and that is the whole point of the
+    # first attempt at this scenario. With a batch of 8, sixteen closed-loop
+    # clients across two workers cannot overrun a queue of 4: the eight clients
+    # aimed at one worker all fit in a single batch, so nothing is ever left
+    # waiting and no request is refused. That run produced zero 429s and is kept
+    # as results/faults/queue-exhaustion-batch8-never-sheds. Shrinking the batch
+    # to 2 leaves six of the eight waiting on a queue of four, which is what
+    # makes the queue -- rather than the model -- the binding constraint.
     "queue-exhaustion": (
         ScenarioConfig(
-            "queue-exhaustion", concurrency=16, duration_s=16.0, warmup_s=3.0, queue_depth=4
+            "queue-exhaustion", concurrency=16, duration_s=16.0, warmup_s=3.0,
+            queue_depth=4, max_batch_size=2,
         ),
         scenario_queue_exhaustion,
     ),

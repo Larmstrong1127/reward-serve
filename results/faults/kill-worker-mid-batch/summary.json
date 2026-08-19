@@ -1,6 +1,6 @@
 {
   "scenario": "kill-worker-mid-batch",
-  "measured_at": "2026-08-18T21:53:46",
+  "measured_at": "2026-08-18T22:00:18",
   "model": "DantheMan124/deberta-preference-reward",
   "tier": {
     "workers": 2,
@@ -16,16 +16,16 @@
   "sampling_interval_s": 0.1,
   "injections": [
     {
-      "t": 9.9899,
+      "t": 10.0033,
       "what": "terminate worker B",
-      "pid": 65276
+      "pid": 54912
     }
   ],
   "question": "what does the client see when a worker is killed mid-batch",
   "killed_worker": "B",
-  "killed_at_s": 9.99,
-  "requests_measured": 294,
-  "requests_after_kill": 241,
+  "killed_at_s": 10.003,
+  "requests_measured": 249,
+  "requests_after_kill": 187,
   "requests_in_flight_at_kill": 4,
   "in_flight_at_kill_statuses": {
     "502": 2,
@@ -38,54 +38,59 @@
   "failed_requests_after_kill": 0,
   "failure_statuses": {},
   "served_split_before_kill": {
-    "B": 28,
-    "A": 25
+    "A": 29,
+    "B": 33
   },
   "served_split_after_kill": {
-    "A": 241
+    "A": 187
   },
-  "first_request_served_only_by_A_at_s": 10.049,
-  "convergence_after_kill_s": 0.059,
+  "first_request_served_only_by_A_at_s": 10.096,
+  "convergence_after_kill_s": 0.093,
   "router_state_transitions_B": [
     {
-      "t": 0.0164,
+      "t": 0.0159,
       "state": "UP",
       "breaker": "CLOSED"
     },
     {
-      "t": 10.6288,
+      "t": 10.6436,
+      "state": "UP",
+      "breaker": "OPEN"
+    },
+    {
+      "t": 10.7463,
       "state": "SUSPECT",
       "breaker": "OPEN"
     },
     {
-      "t": 12.022,
+      "t": 12.1822,
       "state": "DOWN",
       "breaker": "OPEN"
     }
   ],
-  "B_first_seen_SUSPECT_at_s": 10.6288,
-  "B_first_seen_DOWN_at_s": 12.022,
+  "B_first_seen_SUSPECT_at_s": 10.7463,
+  "B_first_seen_DOWN_at_s": 12.1822,
   "retried_requests": 4,
   "retried_outcomes": {
     "200": 4
   },
   "retried_latencies_ms": [
-    573.274,
-    587.204,
-    407.016,
-    556.181
+    508.375,
+    515.706,
+    478.133,
+    464.7
   ],
   "router_retries_total": 4.0,
   "unsafe_retries": 0,
   "unsafe_retries_note": "A retry is only issued for a pre-send connection failure, so no request that reached a worker can be retried. Enforced by tests/test_router.py::test_a_500_that_reached_a_worker_is_never_retried.",
   "status_counts": {
-    "200": 292,
+    "200": 247,
     "502": 2
   },
   "latency": {
-    "n_ok": 292,
-    "p50_ms": 298.169,
-    "p99_ms": 573.274,
-    "max_ms": 587.204
+    "n_ok": 247,
+    "p50_ms": 344.554,
+    "p99_ms": 706.686,
+    "max_ms": 715.737
   }
 }

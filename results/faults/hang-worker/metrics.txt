@@ -7,50 +7,50 @@ rs_router_upstream_state{worker="B"} 2.0
 rs_router_retries_total 0.0
 # HELP rs_router_retries_created Requests retried on a second worker after a pre-send connection failure.
 # TYPE rs_router_retries_created gauge
-rs_router_retries_created 1.7871154168978481e+09
+rs_router_retries_created 1.7871158056227324e+09
 # HELP rs_router_upstream_latency_seconds Wall time of one router->worker attempt, including a failed one.
 # TYPE rs_router_upstream_latency_seconds histogram
-rs_router_upstream_latency_seconds_bucket{le="0.01",worker="A"} 0.0
-rs_router_upstream_latency_seconds_bucket{le="0.025",worker="A"} 0.0
-rs_router_upstream_latency_seconds_bucket{le="0.05",worker="A"} 0.0
-rs_router_upstream_latency_seconds_bucket{le="0.1",worker="A"} 0.0
-rs_router_upstream_latency_seconds_bucket{le="0.2",worker="A"} 0.0
-rs_router_upstream_latency_seconds_bucket{le="0.35",worker="A"} 196.0
-rs_router_upstream_latency_seconds_bucket{le="0.5",worker="A"} 253.0
-rs_router_upstream_latency_seconds_bucket{le="0.75",worker="A"} 257.0
-rs_router_upstream_latency_seconds_bucket{le="1.0",worker="A"} 258.0
-rs_router_upstream_latency_seconds_bucket{le="2.0",worker="A"} 258.0
-rs_router_upstream_latency_seconds_bucket{le="3.0",worker="A"} 258.0
-rs_router_upstream_latency_seconds_bucket{le="5.0",worker="A"} 258.0
-rs_router_upstream_latency_seconds_bucket{le="10.0",worker="A"} 258.0
-rs_router_upstream_latency_seconds_bucket{le="+Inf",worker="A"} 258.0
-rs_router_upstream_latency_seconds_count{worker="A"} 258.0
-rs_router_upstream_latency_seconds_sum{worker="A"} 83.23500000091735
 rs_router_upstream_latency_seconds_bucket{le="0.01",worker="B"} 0.0
 rs_router_upstream_latency_seconds_bucket{le="0.025",worker="B"} 0.0
 rs_router_upstream_latency_seconds_bucket{le="0.05",worker="B"} 0.0
 rs_router_upstream_latency_seconds_bucket{le="0.1",worker="B"} 0.0
-rs_router_upstream_latency_seconds_bucket{le="0.2",worker="B"} 0.0
-rs_router_upstream_latency_seconds_bucket{le="0.35",worker="B"} 3.0
-rs_router_upstream_latency_seconds_bucket{le="0.5",worker="B"} 22.0
-rs_router_upstream_latency_seconds_bucket{le="0.75",worker="B"} 27.0
-rs_router_upstream_latency_seconds_bucket{le="1.0",worker="B"} 27.0
-rs_router_upstream_latency_seconds_bucket{le="2.0",worker="B"} 29.0
-rs_router_upstream_latency_seconds_bucket{le="3.0",worker="B"} 33.0
-rs_router_upstream_latency_seconds_bucket{le="5.0",worker="B"} 35.0
-rs_router_upstream_latency_seconds_bucket{le="10.0",worker="B"} 35.0
-rs_router_upstream_latency_seconds_bucket{le="+Inf",worker="B"} 35.0
-rs_router_upstream_latency_seconds_count{worker="B"} 35.0
-rs_router_upstream_latency_seconds_sum{worker="B"} 33.52899999951478
+rs_router_upstream_latency_seconds_bucket{le="0.2",worker="B"} 1.0
+rs_router_upstream_latency_seconds_bucket{le="0.35",worker="B"} 14.0
+rs_router_upstream_latency_seconds_bucket{le="0.5",worker="B"} 33.0
+rs_router_upstream_latency_seconds_bucket{le="0.75",worker="B"} 38.0
+rs_router_upstream_latency_seconds_bucket{le="1.0",worker="B"} 38.0
+rs_router_upstream_latency_seconds_bucket{le="2.0",worker="B"} 38.0
+rs_router_upstream_latency_seconds_bucket{le="3.0",worker="B"} 43.0
+rs_router_upstream_latency_seconds_bucket{le="5.0",worker="B"} 45.0
+rs_router_upstream_latency_seconds_bucket{le="10.0",worker="B"} 45.0
+rs_router_upstream_latency_seconds_bucket{le="+Inf",worker="B"} 45.0
+rs_router_upstream_latency_seconds_count{worker="B"} 45.0
+rs_router_upstream_latency_seconds_sum{worker="B"} 36.70399999979418
+rs_router_upstream_latency_seconds_bucket{le="0.01",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.025",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.05",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.1",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.2",worker="A"} 1.0
+rs_router_upstream_latency_seconds_bucket{le="0.35",worker="A"} 36.0
+rs_router_upstream_latency_seconds_bucket{le="0.5",worker="A"} 92.0
+rs_router_upstream_latency_seconds_bucket{le="0.75",worker="A"} 148.0
+rs_router_upstream_latency_seconds_bucket{le="1.0",worker="A"} 163.0
+rs_router_upstream_latency_seconds_bucket{le="2.0",worker="A"} 163.0
+rs_router_upstream_latency_seconds_bucket{le="3.0",worker="A"} 163.0
+rs_router_upstream_latency_seconds_bucket{le="5.0",worker="A"} 163.0
+rs_router_upstream_latency_seconds_bucket{le="10.0",worker="A"} 163.0
+rs_router_upstream_latency_seconds_bucket{le="+Inf",worker="A"} 163.0
+rs_router_upstream_latency_seconds_count{worker="A"} 163.0
+rs_router_upstream_latency_seconds_sum{worker="A"} 82.09399999992456
 # HELP rs_router_upstream_latency_seconds_created Wall time of one router->worker attempt, including a failed one.
 # TYPE rs_router_upstream_latency_seconds_created gauge
-rs_router_upstream_latency_seconds_created{worker="A"} 1.78711541792159e+09
-rs_router_upstream_latency_seconds_created{worker="B"} 1.7871154193470917e+09
+rs_router_upstream_latency_seconds_created{worker="B"} 1.7871158065710826e+09
+rs_router_upstream_latency_seconds_created{worker="A"} 1.7871158065839784e+09
 # HELP rs_router_requests_total Client-visible outcomes of routed requests, by status code.
 # TYPE rs_router_requests_total counter
-rs_router_requests_total{status="200"} 287.0
-rs_router_requests_total{status="504"} 6.0
+rs_router_requests_total{status="200"} 201.0
+rs_router_requests_total{status="504"} 7.0
 # HELP rs_router_requests_created Client-visible outcomes of routed requests, by status code.
 # TYPE rs_router_requests_created gauge
-rs_router_requests_created{status="200"} 1.78711541792159e+09
-rs_router_requests_created{status="504"} 1.7871154283216982e+09
+rs_router_requests_created{status="200"} 1.7871158065720747e+09
+rs_router_requests_created{status="504"} 1.7871158169488711e+09
