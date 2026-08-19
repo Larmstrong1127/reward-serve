@@ -21,6 +21,26 @@ The collector also derives span metrics on `:8889`, which is how you tell "the
 server stopped emitting" from "the collector stopped forwarding" — two very
 different 3am problems that look identical on an empty graph.
 
+## Wiring it in
+
+Three lines at the app factory, and neither `server.py` nor `batcher.py` has to
+know that telemetry exists:
+
+```python
+metrics = obs.setup_metrics()
+hooks = obs.ObsHooks(metrics, tracer=obs.setup_tracing("reward-serve"))
+app = create_app(settings, hooks=obs.as_batcher_hooks(hooks))
+obs.instrument_app(app, hooks, metrics)   # mounts /metrics, opens score.request
+```
+
+`as_batcher_hooks` adapts to the batcher's own `BatcherHooks` dataclass, so a
+change to those four signatures fails a test in `tests/test_obs_wiring.py`
+rather than quietly leaving the hooks as no-ops. `instrument_app` adds an HTTP
+middleware that traces only the scoring paths: tracing `/healthz` and `/readyz`
+would bury every real request under probe traffic and drop probe timings into
+the latency histogram, which is a quick way to build a dashboard that says
+everything is fine.
+
 ## How to read a trace here
 
 A single scoring request produces this:
@@ -126,6 +146,18 @@ up only indirectly, as a forward pass that got slower for no visible reason.
 
 ## Not done
 
+- **The stack has never been brought up.** Docker is not installed on this
+  machine — `docker` is absent from PATH and there is no Docker Desktop
+  installation to start — so `docker compose config` has not been run, no
+  container has been built, and no panel in the committed dashboard has ever
+  rendered against live data. What has been checked is that every file parses
+  and hangs together: the compose file declares the five services with the
+  server's healthcheck on `/readyz`, the collector receives OTLP/gRPC and
+  exports to Jaeger, Prometheus scrapes `server:8000/metrics` and loads the
+  rules, the dashboard JSON is valid and every panel expression passes the
+  PromQL checker, and every datasource UID the dashboard uses is one the
+  provisioning file creates. Those are checks a test can make on this box;
+  "the dashboard works" is not one of them, and it is not claimed.
 - No log pipeline. Traces and metrics only; server logs stay on stdout.
 - No exemplars linking histogram buckets to trace IDs. They would make the
   latency panel click straight through to a slow trace, and the wiring is

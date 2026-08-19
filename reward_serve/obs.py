@@ -88,8 +88,8 @@ SERVICE_NAME_KEY = "service.name"
 # Histogram buckets
 # ---------------------------------------------------------------------------
 # Chosen for a service whose end-to-end request latency lives in roughly
-# 20-500 ms on this machine: see results/forward_dry_run.json for the ten-request
-# CPU dry run those numbers come from, and docs/slo.md for how the latency
+# 20-500 ms on this machine: see results/obs_dry_run.json for the twenty-request
+# real-server CPU dry run those numbers come from, and docs/slo.md for how the latency
 # target is derived from them.
 #
 # Why not the prometheus_client defaults (.005 .01 .025 .05 .075 .1 .25 .5 .75
