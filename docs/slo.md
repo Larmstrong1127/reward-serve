@@ -10,10 +10,20 @@ Window: **30 days, rolling.**
 
 ## 1. The two SLIs
 
-Both are measured from `rs_requests_total` and `rs_request_latency_seconds`,
-which count **scored items**, not HTTP requests: a Form B request carrying eight
-pairs contributes eight. The item is the batcher's unit of work and therefore
-the unit a promise can honestly be made about.
+The two SLIs deliberately count different things, and mixing them up would make
+both wrong:
+
+- **Availability** is measured from `rs_requests_total`, which counts **scored
+  items**. A Form B request carrying eight pairs contributes eight, because the
+  item is the batcher's unit of work and the unit that can succeed or fail.
+- **Latency** is measured from `rs_request_latency_seconds`, which is observed
+  once per **HTTP request**, at the middleware. That is what a caller waits on:
+  a Form B request is not served until its last pair is, so charging it eight
+  separate latency samples would flatter the number by counting the fast pairs
+  eight times over.
+
+Neither ratio therefore has to match the other's denominator, and neither should
+be compared against a client-side request count without knowing which is which.
 
 ### Availability
 
@@ -33,9 +43,9 @@ sum(rate(rs_requests_total[30d]))
 
 ### Latency
 
-The share of items whose end-to-end server-side latency was under a fixed
-threshold. Not a percentile of a percentile: the numerator is a bucket count, so
-the number is exact rather than interpolated.
+The share of HTTP scoring requests whose end-to-end server-side latency was
+under a fixed threshold. Not a percentile of a percentile: the numerator is a
+bucket count, so the number is exact rather than interpolated.
 
 ```promql
 sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30d]))
@@ -43,20 +53,23 @@ sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30d]))
 sum(rate(rs_request_latency_seconds_count[30d]))
 ```
 
-**Target: 99% of items under the threshold.**
+**Target: 99% of requests under the threshold.**
 
 ## 2. Where the latency threshold comes from
 
 A threshold picked because it is a round number is decoration. This one is
 derived from the cost of a forward pass on this machine, by this rule:
 
-    threshold = the smallest LATENCY_BUCKETS edge >= 3 x (p_max_forward_ms + MAX_WAIT_MS)
+    threshold = the smallest LATENCY_BUCKETS edge >= (2 x p_max_forward_ms) + MAX_WAIT_MS
 
-where `p_max_forward_ms` is the slowest forward pass observed in the ten-request
-CPU dry run and `MAX_WAIT_MS` is the batcher's flush timer (default 10 ms). The
-factor of three is the headroom the queue is allowed to consume before a request
-counts as late: one forward pass to run, plus room for an item to miss a batch
-and ride the next one, plus margin. Rounding **up to a bucket edge** matters —
+where `p_max_forward_ms` is the slowest forward pass observed in the dry run and
+`MAX_WAIT_MS` is the batcher's flush timer (default 10 ms). The factor of two is
+not margin for its own sake, it is the worst case the batcher actually produces:
+a request that arrives just after a pass has begun waits out that whole pass,
+then rides the next one, having also paid the flush timer. A threshold below
+that would call the batcher's normal behaviour a failure; a threshold far above
+it would stop the SLO noticing anything short of a total stall. Rounding **up to
+a bucket edge** matters —
 the SLI is a bucket count, so a threshold that is not an edge cannot be measured
 without interpolating, which would put an estimate at the centre of the error
 budget.
@@ -64,17 +77,20 @@ budget.
 The measurement command is:
 
     cd D:\ClaudeProjects\reward-serve-wt-observability
-    D:\ClaudeProjects\reward-serve\.venv\Scripts\python.exe scripts/forward_dry_run.py
+    D:\ClaudeProjects\reward-serve\.venv\Scripts\python.exe scripts/obs_dry_run.py
 
-It refuses to run on a contended box (`scripts/box_quiet.py`, charter rule 3)
-and writes `results/forward_dry_run.json` next to the box-quiet report that
-gated it.
+It runs the real server, the real batcher and the real checkpoint with obs
+wired in, fires twenty concurrent requests so batches actually form, refuses to
+start on a contended box (`scripts/box_quiet.py`, charter rule 3), and writes
+`results/obs_dry_run.json` next to the box-quiet report that gated it.
 
 > **Status: the threshold is not set.** Every attempt so far has been refused by
-> the box-quiet gate — GPU utilisation pinned at 100% with 22 GB resident, from
-> other work that owns the GPU on this machine, and host CPU between 20% and 36%
-> against a 15% ceiling. The refusals are recorded in
-> `results/box_quiet_forward_dry_run.json`. A forward time measured against that
+> the box-quiet gate. GPU utilisation sat at 100% with 22 GB resident throughout,
+> from other work that owns the GPU on this machine, and host CPU ran between
+> 20% and 72% against a 15% ceiling — partly that other work, partly the other
+> agents building this repo on the same box at the same time, which the gate
+> correctly reports as hot python processes. The refusals are recorded in
+> `results/box_quiet_obs_dry_run.json`. A forward time measured against that
 > would be a measurement of the render job, not of this server, so no number is
 > published and the threshold below is left as `<THRESHOLD>` on purpose. The
 > derivation rule, the buckets it must round to, and the command that produces

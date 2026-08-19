@@ -13,7 +13,8 @@
     "list": [
       {
         "name": "slo_latency_le",
-        "label": "Latency SLI bucket (seconds)",
+        "label": "Latency SLI bucket, seconds (PROVISIONAL, not yet measured)",
+        "description": "Placeholder. docs/slo.md section 2 derives this from the slowest forward pass in results/obs_dry_run.json, which the box-quiet gate has not yet allowed to run. Until then the latency burn panels plot a threshold nobody measured. A test fails if this label and the doc stop agreeing.",
         "type": "constant",
         "hide": 2,
         "query": "0.350",

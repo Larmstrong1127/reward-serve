@@ -281,3 +281,38 @@ def test_dashboard_datasource_uid_matches_the_provisioned_one() -> None:
     doc = json.loads(DASHBOARD.read_text(encoding="utf-8"))
     used = {p["datasource"]["uid"] for p in doc["panels"] if "datasource" in p}
     assert used <= uids, f"dashboard points at datasources that are not provisioned: {used - uids}"
+
+
+def test_the_unmeasured_latency_threshold_is_flagged_in_both_places() -> None:
+    """The doc and the dashboard must agree about whether the threshold is real.
+
+    Grafana cannot hold an empty constant, so the dashboard ships a placeholder.
+    The failure mode that matters is the placeholder outliving the measurement,
+    or the doc being updated while the dashboard keeps the placeholder: either
+    way a burn panel would plot against a threshold nobody chose. This test ties
+    them together so the pair moves at once.
+    """
+    doc_says_unset = "the threshold is not set" in SLO_DOC.read_text(encoding="utf-8").lower()
+    dashboard = json.loads(DASHBOARD.read_text(encoding="utf-8"))
+    var = next(v for v in dashboard["templating"]["list"] if v["name"] == "slo_latency_le")
+    dashboard_says_provisional = "provisional" in var["label"].lower()
+
+    assert doc_says_unset == dashboard_says_provisional, (
+        "docs/slo.md and the dashboard disagree about whether the latency "
+        "threshold has been measured"
+    )
+    if doc_says_unset:
+        assert "obs_dry_run.json" in var["description"]
+
+
+def test_the_measured_threshold_would_be_a_real_bucket_edge() -> None:
+    """Whatever the dry run yields, the threshold has to land on a bucket edge.
+
+    The latency SLI is a bucket count. A threshold between edges cannot be read
+    without interpolating, which puts an estimate at the centre of the error
+    budget. This checks the placeholder already obeys that rule, so the habit is
+    in place before the real number arrives.
+    """
+    dashboard = json.loads(DASHBOARD.read_text(encoding="utf-8"))
+    var = next(v for v in dashboard["templating"]["list"] if v["name"] == "slo_latency_le")
+    assert float(var["query"]) in obs.LATENCY_BUCKETS
