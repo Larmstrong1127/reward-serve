@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 WINDOW_S = 30
 CPU_MAX = 15.0
@@ -35,7 +36,7 @@ def _gpu_util() -> int | None:
         return None
 
 
-def measure(window_s: int = WINDOW_S) -> dict:
+def measure(window_s: int = WINDOW_S) -> dict[str, Any]:
     import psutil  # type: ignore
 
     me = os.getpid()
@@ -78,7 +79,7 @@ def measure(window_s: int = WINDOW_S) -> dict:
     }
 
 
-def require_quiet(report_path: Path | None = None) -> dict:
+def require_quiet(report_path: Path | None = None) -> dict[str, Any]:
     report = measure()
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

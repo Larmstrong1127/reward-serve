@@ -27,7 +27,8 @@ from __future__ import annotations
 
 import math
 import statistics
-from typing import TYPE_CHECKING, Any, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # avoid a runtime import cycle with generator.py
     from loadgen.generator import RequestRecord, RunResult
@@ -51,7 +52,7 @@ def _mean_or_none(values: Sequence[float]) -> float | None:
 
 
 def summarize_records(
-    records: Sequence["RequestRecord"],
+    records: Sequence[RequestRecord],
     *,
     include_warmup: bool = False,
 ) -> dict[str, Any]:
@@ -106,7 +107,7 @@ def summarize_records(
     return out
 
 
-def _status_counts(rows: Sequence["RequestRecord"]) -> dict[str, int]:
+def _status_counts(rows: Sequence[RequestRecord]) -> dict[str, int]:
     counts: dict[str, int] = {}
     for r in rows:
         key = str(r.status)
@@ -114,7 +115,7 @@ def _status_counts(rows: Sequence["RequestRecord"]) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
-def _error_codes(rows: Sequence["RequestRecord"]) -> dict[str, int]:
+def _error_codes(rows: Sequence[RequestRecord]) -> dict[str, int]:
     counts: dict[str, int] = {}
     for r in rows:
         if r.error_code:
@@ -122,7 +123,7 @@ def _error_codes(rows: Sequence["RequestRecord"]) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
-def summarize(result: "RunResult") -> dict[str, Any]:
+def summarize(result: RunResult) -> dict[str, Any]:
     """Statistics for a RunResult, with the run's own configuration attached."""
     stats = summarize_records(result.records)
     stats.update(

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import os
 import platform
@@ -26,9 +27,10 @@ import socket
 import subprocess
 import sys
 import time
+from collections.abc import Iterator, Sequence
 from importlib import metadata
 from pathlib import Path
-from typing import Any, Iterator, Sequence
+from typing import Any
 
 from loadgen.generator import RunResult, run_open_loop, wait_ready
 from loadgen.stats import summarize
@@ -120,7 +122,7 @@ class ServerProcess:
         self.log_path = log_path
         self.proc: subprocess.Popen[bytes] | None = None
 
-    def __enter__(self) -> "ServerProcess":
+    def __enter__(self) -> ServerProcess:
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self._log = self.log_path.open("wb")
         self.proc = subprocess.Popen(
@@ -138,10 +140,8 @@ class ServerProcess:
             except subprocess.TimeoutExpired:
                 p.kill()
                 p.wait(timeout=15)
-        try:
+        with contextlib.suppress(Exception):
             self._log.close()
-        except Exception:
-            pass
 
     def alive(self) -> bool:
         return self.proc is not None and self.proc.poll() is None

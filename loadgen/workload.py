@@ -48,7 +48,9 @@ def make_sample(rng: random.Random, bucket: str) -> Sample:
     return Sample(bucket=bucket, prompt=_filler(rng, p_words), response=_filler(rng, r_words))
 
 
-def build_corpus(seed: int, per_bucket: int = 64, buckets: tuple[str, ...] | None = None) -> list[Sample]:
+def build_corpus(
+    seed: int, per_bucket: int = 64, buckets: tuple[str, ...] | None = None
+) -> list[Sample]:
     """Deterministic corpus: same seed always yields the same list of samples.
 
     Buckets are INTERLEAVED (short, medium, long, short, ...), not concatenated.

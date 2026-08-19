@@ -23,6 +23,7 @@ Env: PORT, MAX_BATCH_SIZE, MAX_WAIT_MS, QUEUE_DEPTH, FORWARD_BASE_MS,
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import os
 import time
@@ -88,7 +89,7 @@ class Batcher:
                     break
                 try:
                     batch.append(await asyncio.wait_for(self.queue.get(), remaining))
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Windows asyncio fires timers up to loop._clock_resolution
                     # (15.625 ms here) EARLY, so a TimeoutError does not prove
                     # the wait window elapsed. Re-check the wall clock; without
@@ -167,10 +168,8 @@ def make_handler(batcher: Batcher, cfg: Config):  # noqa: ANN201 - asyncio callb
                     writer.write(_response(404, b'{"detail":"not found"}'))
                 await writer.drain()
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 writer.close()
-            except Exception:
-                pass
 
     return handle
 
@@ -207,10 +206,8 @@ async def amain() -> None:
 
 
 def main() -> None:
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(amain())
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":
