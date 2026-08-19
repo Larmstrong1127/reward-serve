@@ -202,6 +202,7 @@ def run(
             rows[variant]["pairwise_accuracy"] - rows["fp32"]["pairwise_accuracy"], 4
         )
 
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     box_report: dict[str, Any] | None = None
     if measure_box:
         from scripts.box_quiet import measure
@@ -256,7 +257,6 @@ def run(
         if existing.get("n_pairs_evaluated") == n_pairs:
             merged = {**existing.get("variants", {}), **rows}
             payload["variants"] = merged
-    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"[out] wrote {out_path}", flush=True)
     return payload

@@ -15,6 +15,7 @@ model and this suite says so.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -338,3 +339,73 @@ def test_score_split_checkpoint_survives_a_truncated_side(tmp_path: Path) -> Non
         _FakeScorer(), _fake_pairs(8), batch_size=8, checkpoint=ckpt  # type: ignore[arg-type]
     )
     assert len(chosen) == len(rejected) == 8
+
+
+def test_completed_run_writes_both_accuracy_json_and_box_quiet_json(
+    patched_runner: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The artifact contract: a finished pass leaves both files, in one directory.
+
+    Verified against a fresh directory, because the reader clones cold and the
+    box_quiet report is written before the results file.
+    """
+    import scripts.box_quiet as box_quiet
+
+    report = {"passed": False, "cpu_mean_pct": 44.0}
+    monkeypatch.setattr(box_quiet, "measure", lambda *a, **k: report)
+    out = tmp_path / "brand" / "new" / "accuracy.json"
+
+    payload = run_accuracy.run(
+        variants=["fp32", "int8-dynamic"], out_path=out, use_cache=False, measure_box=True
+    )
+
+    assert out.exists()
+    box = out.parent / "box_quiet.json"
+    assert box.exists()
+    assert json.loads(box.read_text(encoding="utf-8"))["passed"] is False
+    assert payload["box_quiet_passed"] is False
+    written = json.loads(out.read_text(encoding="utf-8"))
+    assert set(written["variants"]) == {"fp32", "int8-dynamic"}
+    for key in ("n_pairs_evaluated", "max_length_tokens", "torch_num_threads", "command"):
+        assert key in written
+
+
+def test_a_partial_pass_is_never_written_as_a_complete_one(
+    patched_runner: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Never round a partial into a done: a short pass must raise, not publish."""
+    monkeypatch.setattr(
+        run_accuracy, "score_split", lambda *a, **k: ([1.0, 2.0], [0.5, 0.25])
+    )
+    out = tmp_path / "accuracy.json"
+    with pytest.raises(RuntimeError, match="refusing to write a partial"):
+        run_accuracy.run(variants=["fp32"], out_path=out, use_cache=False, measure_box=False)
+    assert not out.exists()
+
+
+DOC = REPO_ROOT / "docs" / "quantization.md"
+
+
+@pytest.mark.skipif(not ACCURACY_JSON.exists(), reason="accuracy.json not produced yet")
+def test_the_doc_has_no_placeholders_left_once_the_artifact_exists() -> None:
+    """The doc is pre-structured with placeholders; the artifact landing retires them."""
+    assert "TODO-FROM-accuracy.json" not in DOC.read_text(encoding="utf-8")
+
+
+@pytest.mark.skipif(not ACCURACY_JSON.exists(), reason="accuracy.json not produced yet")
+def test_every_accuracy_quoted_in_the_doc_appears_in_the_artifact() -> None:
+    """Charter rule 2: a figure in prose must be readable in a committed artifact."""
+    data = json.loads(ACCURACY_JSON.read_text(encoding="utf-8"))
+    text = DOC.read_text(encoding="utf-8")
+    for name, row in data["variants"].items():
+        assert f"{row['pairwise_accuracy']:.4f}" in text, f"{name} accuracy missing from the doc"
+
+
+def test_latency_doc_claims_no_number_while_the_gate_has_not_passed() -> None:
+    """No latency.json means no latency figure may appear in the doc."""
+    latency = REPO_ROOT / "results" / "quantization" / "latency.json"
+    if latency.exists():
+        pytest.skip("latency.json exists; this guard only covers the un-measured state")
+    section = DOC.read_text(encoding="utf-8").split("## Latency")[1].split("## Threats")[0]
+    assert "not measured" in section.lower()
+    assert not re.search(r"\d+(\.\d+)?\s*(ms|s)", section), "a latency figure leaked in"
