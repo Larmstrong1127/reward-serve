@@ -1,13 +1,13 @@
 {
   "passed": false,
   "window_s": 30,
-  "cpu_mean_pct": 29.97,
-  "gpu_util_max_pct": 100,
+  "cpu_mean_pct": 25.9,
+  "gpu_util_max_pct": 16,
   "hot_python_pids": {},
   "thresholds": {
     "cpu_max": 15.0,
     "gpu_max": 10,
     "other_python_max": 20.0
   },
-  "measured_at": "2026-08-18T21:10:31"
+  "measured_at": "2026-08-18T21:38:12"
 }

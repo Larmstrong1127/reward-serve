@@ -84,18 +84,39 @@ wired in, fires twenty concurrent requests so batches actually form, refuses to
 start on a contended box (`scripts/box_quiet.py`, charter rule 3), and writes
 `results/obs_dry_run.json` next to the box-quiet report that gated it.
 
-> **Status: the threshold is not set.** Every attempt so far has been refused by
-> the box-quiet gate. GPU utilisation sat at 100% with 22 GB resident throughout,
-> from other work that owns the GPU on this machine, and host CPU ran between
-> 20% and 72% against a 15% ceiling — partly that other work, partly the other
-> agents building this repo on the same box at the same time, which the gate
-> correctly reports as hot python processes. The refusals are recorded in
-> `results/box_quiet_obs_dry_run.json`. A forward time measured against that
-> would be a measurement of the render job, not of this server, so no number is
-> published and the threshold below is left as `<THRESHOLD>` on purpose. The
-> derivation rule, the buckets it must round to, and the command that produces
-> it are all fixed; only the number is missing, and it takes one quiet run to
-> fill in. Nothing downstream — the burn-rate maths, the alert windows, the
+> **Status: the threshold is not set.** Twenty-two attempts were refused by the
+> box-quiet gate, for two different reasons, and the second matters more than
+> the first.
+>
+> For the first fourteen the machine was genuinely busy: GPU utilisation pinned
+> at 100% with 22 GB resident, from other work that owns the GPU here, and host
+> CPU between 20% and 72% — partly that work, partly the other agents building
+> this repo on the same box, which the gate correctly reports as hot python
+> processes. That is the gate doing its job.
+>
+> Then the GPU work ended — utilisation fell to 10%, memory to 458 MiB — and the
+> gate kept refusing. `results/box_quiet_calibration.json`, produced by
+> `python scripts/box_quiet_calibration.py 6`, measures why: across six
+> 30-second windows the GPU reading ranged 10–21% with a median of 11.5%, and
+> **not one sample fell under the 10% ceiling**. The gate takes the *maximum*
+> GPU utilisation over the window, and a single frame of desktop compositing
+> from a browser or a chat client clears 10%. As written, that condition cannot
+> be met on this machine while anyone is logged in: it does not gate a
+> measurement, it blocks one — permanently, and for the load sweeps in
+> `loadgen/` exactly as much as for this document. The same run caught host CPU
+> at 54–75%, which is real contention from the sibling agents, and there the
+> gate is working correctly.
+>
+> Both are recorded rather than worked around. I have not touched
+> `scripts/box_quiet.py`: charter rule 3 is binding, the file is shared with
+> other agents, and a threshold quietly relaxed to unblock myself would be worth
+> less than no gate at all. The fix belongs to whoever owns that gate; the
+> evidence it needs is committed. A forward time measured against a box in
+> either state would measure the contention rather than this server, so no
+> number is published and the threshold below is left as `<THRESHOLD>` on
+> purpose. The derivation rule, the buckets it must round to, and the command
+> that produces it are all fixed; only the number is missing, and it takes one
+> quiet run to fill in. Nothing downstream — the burn-rate maths, the alert windows, the
 > availability SLO — depends on it.
 
 ## 3. Error budget

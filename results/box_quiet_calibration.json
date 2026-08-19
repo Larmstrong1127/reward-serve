@@ -1,0 +1,126 @@
+{
+  "what_this_measures": "box_quiet.measure() repeated on an otherwise idle desktop, to show what the gate reads when nothing is deliberately running. Compare the observed range against the thresholds the gate enforces.",
+  "n_samples": 6,
+  "window_s_each": 30,
+  "thresholds": {
+    "cpu_max": 15.0,
+    "gpu_max": 10,
+    "other_python_max": 20.0
+  },
+  "cpu_mean_pct": {
+    "min": 53.92,
+    "median": 63.83,
+    "max": 74.85,
+    "threshold": 15.0,
+    "samples_under_threshold": 0
+  },
+  "gpu_util_max_pct": {
+    "min": 10,
+    "median": 11.5,
+    "max": 21,
+    "threshold": 10,
+    "samples_under_threshold": 0,
+    "note": "This is a MAX over the window, not a mean. One frame of desktop compositing spikes it, so a browser or a chat client left open is enough to hold it above a 10% ceiling for the whole 30s."
+  },
+  "passed": 0,
+  "samples": [
+    {
+      "passed": false,
+      "window_s": 30,
+      "cpu_mean_pct": 53.92,
+      "gpu_util_max_pct": 11,
+      "hot_python_pids": {
+        "49376": 24.85
+      },
+      "thresholds": {
+        "cpu_max": 15.0,
+        "gpu_max": 10,
+        "other_python_max": 20.0
+      },
+      "measured_at": "2026-08-18T21:39:51",
+      "sample": 1
+    },
+    {
+      "passed": false,
+      "window_s": 30,
+      "cpu_mean_pct": 61.47,
+      "gpu_util_max_pct": 12,
+      "hot_python_pids": {
+        "49376": 24.820258620689657
+      },
+      "thresholds": {
+        "cpu_max": 15.0,
+        "gpu_max": 10,
+        "other_python_max": 20.0
+      },
+      "measured_at": "2026-08-18T21:40:21",
+      "sample": 2
+    },
+    {
+      "passed": false,
+      "window_s": 30,
+      "cpu_mean_pct": 66.18,
+      "gpu_util_max_pct": 12,
+      "hot_python_pids": {
+        "49376": 24.783620689655173
+      },
+      "thresholds": {
+        "cpu_max": 15.0,
+        "gpu_max": 10,
+        "other_python_max": 20.0
+      },
+      "measured_at": "2026-08-18T21:40:51",
+      "sample": 3
+    },
+    {
+      "passed": false,
+      "window_s": 30,
+      "cpu_mean_pct": 61.48,
+      "gpu_util_max_pct": 10,
+      "hot_python_pids": {
+        "49376": 24.758836206896554
+      },
+      "thresholds": {
+        "cpu_max": 15.0,
+        "gpu_max": 10,
+        "other_python_max": 20.0
+      },
+      "measured_at": "2026-08-18T21:41:22",
+      "sample": 4
+    },
+    {
+      "passed": false,
+      "window_s": 30,
+      "cpu_mean_pct": 74.85,
+      "gpu_util_max_pct": 11,
+      "hot_python_pids": {
+        "49376": 24.004310344827584
+      },
+      "thresholds": {
+        "cpu_max": 15.0,
+        "gpu_max": 10,
+        "other_python_max": 20.0
+      },
+      "measured_at": "2026-08-18T21:41:52",
+      "sample": 5
+    },
+    {
+      "passed": false,
+      "window_s": 30,
+      "cpu_mean_pct": 67.99,
+      "gpu_util_max_pct": 21,
+      "hot_python_pids": {
+        "49376": 23.97629310344827
+      },
+      "thresholds": {
+        "cpu_max": 15.0,
+        "gpu_max": 10,
+        "other_python_max": 20.0
+      },
+      "measured_at": "2026-08-18T21:42:23",
+      "sample": 6
+    }
+  ],
+  "command": "python scripts/box_quiet_calibration.py 6",
+  "measured_at": "2026-08-18T21:42:23"
+}
