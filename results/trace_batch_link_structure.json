@@ -1,0 +1,107 @@
+{
+  "what_this_shows": "One score.request trace, the queue.wait span inside it, and the batch.forward span it links to. batch.size is how many requests shared that forward pass; the links enumerate them.",
+  "request": {
+    "name": "score.request",
+    "trace_id": "6fb745a0a2dee2515893eb4a75c80460",
+    "span_id": "70aca38f2e745831",
+    "parent_span_id": null,
+    "start_time_unix_nano": null,
+    "duration_ms": "redacted: contended box, see charter rule 3",
+    "attributes": {
+      "http.route": "/v1/score",
+      "http.status_code": 200
+    },
+    "links": [
+      {
+        "trace_id": "1398ef44251013e5e9cba8fb47813e6e",
+        "span_id": "1a7a15637b6deb06",
+        "attributes": {
+          "link.kind": "batch.forward"
+        }
+      }
+    ]
+  },
+  "queue_wait": {
+    "name": "queue.wait",
+    "trace_id": "6fb745a0a2dee2515893eb4a75c80460",
+    "span_id": "2f4b2f20690612f5",
+    "parent_span_id": "70aca38f2e745831",
+    "start_time_unix_nano": null,
+    "duration_ms": "redacted: contended box, see charter rule 3",
+    "attributes": {},
+    "links": []
+  },
+  "batch_forward": {
+    "name": "batch.forward",
+    "trace_id": "1398ef44251013e5e9cba8fb47813e6e",
+    "span_id": "1a7a15637b6deb06",
+    "parent_span_id": null,
+    "start_time_unix_nano": null,
+    "duration_ms": "redacted: contended box, see charter rule 3",
+    "attributes": {
+      "batch.linked_requests": 8,
+      "batch.oldest_wait_ms": "redacted: contended box, see charter rule 3",
+      "batch.forward_ms": "redacted: contended box, see charter rule 3",
+      "batch.size": 8
+    },
+    "links": [
+      {
+        "trace_id": "6fb745a0a2dee2515893eb4a75c80460",
+        "span_id": "70aca38f2e745831",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "b9005e8fdb0ad4071f66f9b86faaa840",
+        "span_id": "b3241df7202a5544",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "c2f6ce9d048b40d18d02698f3532ae5b",
+        "span_id": "fcb9207244bf461d",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "d1de02a6f5b3cfa545c5acdda5f34cb7",
+        "span_id": "bb7e8b3dcd557e23",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "2e0d5e196abd23cf7df4a031c75d5b35",
+        "span_id": "ff548419c4994562",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "7a228a2a5d46d2420289167852a25618",
+        "span_id": "10c8b8b5c4c58419",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "79a2040ea83212c33cb0386b5e904d4a",
+        "span_id": "53e1046102980006",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "f10b9d12a6e40525d07724d499a9ef25",
+        "span_id": "bd6bd2067aa18613",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      }
+    ]
+  },
+  "siblings_in_that_batch": 8
+}

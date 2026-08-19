@@ -59,16 +59,31 @@ PROMPTS = [
 ]
 
 
-def _span_to_dict(span: Any) -> dict[str, Any]:
+REDACTED = "redacted: contended box, see charter rule 3"
+
+
+def _span_to_dict(span: Any, *, redact: bool) -> dict[str, Any]:
+    """One span as JSON. With ``redact`` every duration is blanked.
+
+    Structure -- the parent, the links, batch.size -- is not a measurement and
+    survives a contended box unchanged. Durations are measurements, and on a
+    contended box they measure the contention, so they are removed rather than
+    published with a caveat nobody will read.
+    """
     ctx = span.context
+    attributes = dict(span.attributes or {})
+    if redact:
+        for key in ("batch.forward_ms", "batch.oldest_wait_ms"):
+            if key in attributes:
+                attributes[key] = REDACTED
     return {
         "name": span.name,
         "trace_id": format(ctx.trace_id, "032x"),
         "span_id": format(ctx.span_id, "016x"),
         "parent_span_id": format(span.parent.span_id, "016x") if span.parent else None,
-        "start_time_unix_nano": span.start_time,
-        "duration_ms": round((span.end_time - span.start_time) / 1e6, 3),
-        "attributes": dict(span.attributes or {}),
+        "start_time_unix_nano": None if redact else span.start_time,
+        "duration_ms": REDACTED if redact else round((span.end_time - span.start_time) / 1e6, 3),
+        "attributes": attributes,
         "links": [
             {
                 "trace_id": format(link.context.trace_id, "032x"),
@@ -80,10 +95,25 @@ def _span_to_dict(span: Any) -> dict[str, Any]:
     }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    args = argv if argv is not None else sys.argv[1:]
+    # --structure-only: run the same thing on a box the quiet gate refuses, and
+    # write only what contention cannot distort -- span shape, links, batch
+    # sizes, metric names and counts. Every duration comes out redacted. It is
+    # evidence that the wiring works, never evidence of how fast anything is.
+    structure_only = "--structure-only" in args
+
     results_dir = ROOT / "results"
     results_dir.mkdir(exist_ok=True)
-    quiet = require_quiet(results_dir / "box_quiet_obs_dry_run.json")
+    if structure_only:
+        from scripts.box_quiet import measure
+
+        quiet = measure()
+        (results_dir / "box_quiet_obs_structure_run.json").write_text(
+            json.dumps(quiet, indent=2), encoding="utf-8"
+        )
+    else:
+        quiet = require_quiet(results_dir / "box_quiet_obs_dry_run.json")
 
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
@@ -97,6 +127,9 @@ def main() -> int:
     obs.instrument_app(app, hooks, metrics)
 
     from fastapi.testclient import TestClient
+
+    suffix = "_structure" if structure_only else ""
+    prom_name = f"obs_dry_run{suffix}.prom"
 
     load_started = time.perf_counter()
     latencies_ms: list[float] = []
@@ -126,9 +159,9 @@ def main() -> int:
                 payloads.append(body)
 
         scrape = client.get("/metrics")
-        (results_dir / "obs_dry_run.prom").write_text(scrape.text, encoding="utf-8")
+        (results_dir / prom_name).write_text(scrape.text, encoding="utf-8")
 
-    spans = [_span_to_dict(s) for s in exporter.get_finished_spans()]
+    spans = [_span_to_dict(s, redact=structure_only) for s in exporter.get_finished_spans()]
     forwards = [s for s in spans if s["name"] == "batch.forward"]
     requests = [s for s in spans if s["name"] == "score.request"]
 
@@ -158,7 +191,7 @@ def main() -> int:
             "batch_forward": linked_forward,
             "siblings_in_that_batch": len(sibling_ids),
         }
-        (results_dir / "trace_batch_link.json").write_text(
+        (results_dir / f"trace_batch_link{suffix}.json").write_text(
             json.dumps(sample, indent=2), encoding="utf-8"
         )
 
@@ -206,12 +239,27 @@ def main() -> int:
         "command": "python scripts/obs_dry_run.py",
         "measured_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
-    (results_dir / "obs_dry_run.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if structure_only:
+        for key in ("forward_ms", "queue_wait_ms", "client_latency_ms",
+                    "startup_and_model_load_s"):
+            report[key] = REDACTED
+        report["what_this_is"] = (
+            "Structure only. The box_quiet gate refused this run, so every "
+            "duration is redacted and nothing here is a latency measurement. "
+            "What it does show is that the real server, the real batcher and "
+            "the real checkpoint, with obs wired in, produce the span shape, "
+            "the batch links and the metric series the docs describe."
+        )
+
+    (results_dir / f"obs_dry_run{suffix}.json").write_text(
+        json.dumps(report, indent=2), encoding="utf-8"
+    )
 
     print(json.dumps({k: report[k] for k in ("forward_ms", "queue_wait_ms",
-                                             "client_latency_ms", "achieved_batch_sizes")},
+                                             "client_latency_ms", "achieved_batch_sizes",
+                                             "n_forward_spans", "forward_spans_with_links")},
                      indent=2))
-    print(f"wrote {results_dir / 'obs_dry_run.json'}")
+    print(f"wrote {results_dir / f'obs_dry_run{suffix}.json'}")
     return 0
 
 

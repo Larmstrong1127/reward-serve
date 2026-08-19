@@ -1,0 +1,41 @@
+{
+  "model_id": "DantheMan124/deberta-preference-reward",
+  "max_length": 512,
+  "temperature": 1.166796088218689,
+  "device": "cpu",
+  "n_requests": 20,
+  "settings": {
+    "max_batch_size": 8,
+    "max_wait_ms": 10.0,
+    "queue_depth": 256,
+    "request_timeout_ms": 5000.0
+  },
+  "startup_and_model_load_s": "redacted: contended box, see charter rule 3",
+  "forward_ms": "redacted: contended box, see charter rule 3",
+  "queue_wait_ms": "redacted: contended box, see charter rule 3",
+  "client_latency_ms": "redacted: contended box, see charter rule 3",
+  "achieved_batch_sizes": [
+    4,
+    8
+  ],
+  "max_achieved_batch_size": 8,
+  "n_forward_spans": 3,
+  "n_request_spans": 20,
+  "forward_spans_with_links": 3,
+  "box_quiet": {
+    "passed": false,
+    "window_s": 30,
+    "cpu_mean_pct": 31.05,
+    "gpu_util_max_pct": 100,
+    "hot_python_pids": {},
+    "thresholds": {
+      "cpu_max": 15.0,
+      "gpu_max": 10,
+      "other_python_max": 20.0
+    },
+    "measured_at": "2026-08-18T21:11:06"
+  },
+  "command": "python scripts/obs_dry_run.py",
+  "measured_at": "2026-08-18T21:11:09",
+  "what_this_is": "Structure only. The box_quiet gate refused this run, so every duration is redacted and nothing here is a latency measurement. What it does show is that the real server, the real batcher and the real checkpoint, with obs wired in, produce the span shape, the batch links and the metric series the docs describe."
+}

@@ -72,6 +72,18 @@ problem. A short wait and a long forward is a model, threading, or contention
 problem. They have nothing in common except the number the client complained
 about.
 
+A real example is committed at `results/trace_batch_link_structure.json`,
+produced by `python scripts/obs_dry_run.py --structure-only` against the real
+server, the real batcher and the real checkpoint: twenty concurrent requests
+became three forward passes of 8, 8 and 4, and the file shows one request's
+trace, its `queue.wait` child, and the `batch.forward` span it links to with all
+eight siblings enumerated. Every duration in that file is redacted, because the
+box-quiet gate refused the run — the shape of a trace is not a measurement, but
+the times in it would have been, and on a contended box they would have measured
+the contention. `results/obs_dry_run_structure.prom` is the matching `/metrics`
+scrape: 20 items counted `ok`, three forward passes, `rs_batch_size_sum` of 20,
+queue depth back at zero.
+
 One caveat worth knowing before you trust a link: the hook signatures carry no
 item identity, so `obs.py` matches hook calls to items by the batcher's FIFO
 order, which `docs/contract.md` guarantees. If the batcher is ever changed to
