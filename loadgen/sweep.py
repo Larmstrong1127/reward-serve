@@ -235,12 +235,53 @@ async def run_cell(
     return record
 
 
+async def preflight_batching(args: argparse.Namespace, out_dir: Path) -> dict[str, Any]:
+    """Prove the server actually batches before spending hours measuring it.
+
+    A batcher that forwards a backlog one item at a time still answers every
+    request correctly and still reports `batch_size`, so the only way to catch
+    it is to offer more load than one forward pass can absorb and check that the
+    achieved batch size rose above 1. That bug was real in this server's history
+    (fixed in bec147e). A sweep that ran without this check would produce a
+    clean-looking grid measuring the wrong thing.
+    """
+    rec = await run_cell(
+        batch_size=8, wait_ms=20.0, rps=args.preflight_rps, args=args, out_dir=out_dir,
+    )
+    stats = rec.get("stats", {})
+    mean_batch = stats.get("mean_batch_size")
+    check = {
+        "cell": rec.get("cell_id"),
+        "status": rec.get("status"),
+        "offered_rps": args.preflight_rps,
+        "mean_batch_size": mean_batch,
+        "n_success": stats.get("n_success"),
+        "requirement": "mean_batch_size > 1.0 at MAX_BATCH_SIZE=8 under offered load",
+    }
+    (out_dir / "preflight_batching.json").write_text(json.dumps(check, indent=2), encoding="utf-8")
+    if rec.get("status") != "ok":
+        raise SystemExit(f"preflight FAIL: server would not run: {json.dumps(check)}")
+    if not stats.get("n_success"):
+        raise SystemExit(f"preflight FAIL: no successful requests: {json.dumps(check)}")
+    if mean_batch is None or mean_batch <= 1.0:
+        raise SystemExit(
+            "preflight FAIL: the server is not batching -- mean achieved batch size "
+            f"{mean_batch} at MAX_BATCH_SIZE=8 under {args.preflight_rps} rps. "
+            "Every number in this grid would describe an unbatched server. "
+            f"{json.dumps(check)}"
+        )
+    print(f"[sweep] preflight ok: mean batch {mean_batch} at {args.preflight_rps} rps", flush=True)
+    return check
+
+
 async def run_sweep(args: argparse.Namespace) -> int:
     out_dir = Path(args.results_dir) / args.run_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Charter rule 3 -- gate before anything is measured. No skip flag exists.
     quiet = require_quiet(out_dir / "box_quiet.json")
+
+    preflight = await preflight_batching(args, out_dir)
 
     cells_path = out_dir / "cells.jsonl"
     cells_path.write_text("", encoding="utf-8")
@@ -282,6 +323,7 @@ async def run_sweep(args: argparse.Namespace) -> int:
             "repeats_per_cell": 1,
         },
         "box_quiet": quiet,
+        "preflight_batching": preflight,
         "environment": environment_report(),
         "n_cells": len(cells),
         "n_cells_ok": sum(1 for c in cells if c.get("status") == "ok"),
@@ -317,6 +359,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--warmup", type=float, default=5.0)
     ap.add_argument("--seed", type=int, default=1234)
     ap.add_argument("--queue-depth", type=int, default=256)
+    ap.add_argument(
+        "--preflight-rps", type=float, default=4.0,
+        help="offered load for the pre-grid check that the server really batches",
+    )
     ap.add_argument(
         "--server-flags", action=argparse.BooleanOptionalAction, default=True,
         help="append --port/--max-batch-size/--max-wait-ms/--queue-depth to the "

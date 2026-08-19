@@ -95,3 +95,53 @@ def test_sweep_runs_a_tiny_grid_and_writes_reproducible_artifacts(
 def test_free_port_returns_a_usable_port() -> None:
     p = sweep_mod.free_port()
     assert 1024 < p < 65536
+
+
+def test_preflight_aborts_when_the_server_is_not_batching(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A batcher that forwards a backlog one item at a time must stop the grid."""
+    monkeypatch.setattr(sweep_mod, "require_quiet", lambda path=None: {"passed": True})
+    grid_cells = {"n": 0}
+
+    async def fake_run_cell(**kwargs: Any) -> dict[str, Any]:
+        if kwargs.get("batch_size") == 8 and kwargs.get("rps") == 4.0:
+            return {"cell_id": "preflight", "status": "ok",
+                    "stats": {"mean_batch_size": 1.0, "n_success": 50}}
+        grid_cells["n"] += 1
+        return {"status": "ok"}
+
+    monkeypatch.setattr(sweep_mod, "run_cell", fake_run_cell)
+    with pytest.raises(SystemExit) as exc:
+        sweep_mod.main([
+            "--run-id", "nobatch", "--results-dir", str(tmp_path),
+            "--server-cmd", STUB_CMD, "--batch-sizes", "1", "--wait-ms", "5", "--rps", "10",
+        ])
+    assert "not batching" in str(exc.value)
+    assert grid_cells["n"] == 0, "the grid ran against a non-batching server"
+    check = json.loads((tmp_path / "nobatch" / "preflight_batching.json").read_text())
+    assert check["mean_batch_size"] == 1.0
+
+
+def test_preflight_passes_and_lets_the_grid_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(sweep_mod, "require_quiet", lambda path=None: {"passed": True})
+    grid_cells = {"n": 0}
+
+    async def fake_run_cell(**kwargs: Any) -> dict[str, Any]:
+        if kwargs.get("batch_size") == 8 and kwargs.get("rps") == 4.0:
+            return {"cell_id": "preflight", "status": "ok",
+                    "stats": {"mean_batch_size": 5.5, "n_success": 50}}
+        grid_cells["n"] += 1
+        return {"status": "ok", "stats": {}}
+
+    monkeypatch.setattr(sweep_mod, "run_cell", fake_run_cell)
+    rc = sweep_mod.main([
+        "--run-id", "batched", "--results-dir", str(tmp_path),
+        "--server-cmd", STUB_CMD, "--batch-sizes", "1,2", "--wait-ms", "5", "--rps", "10",
+    ])
+    assert rc == 0
+    assert grid_cells["n"] == 2
+    summary = json.loads((tmp_path / "batched" / "summary.json").read_text())
+    assert summary["preflight_batching"]["mean_batch_size"] == 5.5
