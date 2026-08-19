@@ -6,7 +6,7 @@ This is the only module the server imports for telemetry. It owns three things:
    a console exporter as the fallback when no collector is reachable.
 2. ``setup_metrics`` -- a private Prometheus registry with the seven series the
    dashboards and the SLO in ``docs/slo.md`` are built on.
-3. ``BatcherHooks`` -- real implementations of the four no-op callables the
+3. ``ObsHooks`` -- real implementations of the four no-op callables the
    batcher accepts (see ``docs/contract.md`` section 3). Wiring these in is what
    turns the batcher from a black box into something a trace can explain.
 
@@ -72,8 +72,8 @@ __all__ = [
     "FORWARD_BUCKETS",
     "LATENCY_BUCKETS",
     "QUEUE_WAIT_BUCKETS",
-    "BatcherHooks",
     "Metrics",
+    "ObsHooks",
     "documented_buckets",
     "metrics_payload",
     "mount_metrics",
@@ -294,7 +294,7 @@ REJECTION_REASONS: dict[str, str] = {
 
 
 @dataclass
-class BatcherHooks:
+class ObsHooks:
     """Real implementations of the four batcher hooks in ``docs/contract.md``.
 
     Pass ``hooks.on_enqueue``, ``hooks.on_batch_start``, ``hooks.on_batch_end``
@@ -455,3 +455,51 @@ def documented_buckets() -> dict[str, Sequence[float]]:
         "rs_queue_wait_seconds": QUEUE_WAIT_BUCKETS,
         "rs_batch_size": BATCH_SIZE_BUCKETS,
     }
+
+
+# ---------------------------------------------------------------------------
+# Wiring into the real server
+# ---------------------------------------------------------------------------
+def as_batcher_hooks(hooks: ObsHooks) -> Any:
+    """Adapt ``ObsHooks`` to the batcher's own ``BatcherHooks`` dataclass.
+
+    Imported lazily: obs.py must stay importable by tests, scripts, and tooling
+    that never touch the batcher, and the batcher must never import obs.
+    """
+    from reward_serve.batcher import BatcherHooks
+
+    return BatcherHooks(
+        on_enqueue=hooks.on_enqueue,
+        on_batch_start=hooks.on_batch_start,
+        on_batch_end=hooks.on_batch_end,
+        on_complete=hooks.on_complete,
+    )
+
+
+def instrument_app(
+    app: Any,
+    hooks: ObsHooks,
+    metrics: Metrics,
+    *,
+    traced_paths: tuple[str, ...] = ("/v1/score",),
+    metrics_path: str = "/metrics",
+) -> None:
+    """Mount ``/metrics`` and open a ``score.request`` root span per request.
+
+    The middleware, rather than an edit to ``server.py``: the server owns the
+    contract, this module owns the telemetry, and neither has to know the
+    other's internals. Only the scoring paths get a root span -- tracing
+    ``/healthz`` and ``/readyz`` would bury every real request under probe
+    traffic, and the latency histogram would then measure the probes.
+    """
+    mount_metrics(app, metrics, metrics_path)
+
+    async def _trace_requests(request: Any, call_next: Any) -> Any:
+        if not request.url.path.startswith(traced_paths):
+            return await call_next(request)
+        with hooks.request_span("score.request", **{"http.route": request.url.path}) as span:
+            response = await call_next(request)
+            span.set_attribute("http.status_code", response.status_code)
+            return response
+
+    app.middleware("http")(_trace_requests)

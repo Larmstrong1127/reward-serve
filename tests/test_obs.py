@@ -12,7 +12,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from reward_serve import obs
-from tests.stub_batcher import DeadlineExceeded, QueueFull, StubBatcher
+from stub_batcher import DeadlineExceeded, QueueFull, StubBatcher
 
 
 @pytest.fixture()
@@ -36,7 +36,7 @@ def sample(metrics: obs.Metrics, name: str, **labels: str) -> float:
 
 # -- metric wiring ---------------------------------------------------------
 def test_on_complete_counts_status_and_rejections(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
     for status in ("ok", "ok", "timeout", "queue_full", "cancelled"):
         hooks.on_complete(status)
 
@@ -48,7 +48,7 @@ def test_on_complete_counts_status_and_rejections(metrics: obs.Metrics) -> None:
 
 
 def test_queue_depth_rises_on_enqueue_and_falls_on_batch(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
     for _ in range(5):
         hooks.on_enqueue()
     assert sample(metrics, "rs_queue_depth") == 5.0
@@ -63,7 +63,7 @@ def test_queue_depth_rises_on_enqueue_and_falls_on_batch(metrics: obs.Metrics) -
 
 
 def test_batch_size_histogram_uses_documented_buckets(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
     for size in (1, 2, 8, 8, 33):
         hooks.on_batch_start(size, oldest_wait_ms=0.0)
         hooks.on_batch_end(size, forward_ms=1.0)
@@ -75,7 +75,7 @@ def test_batch_size_histogram_uses_documented_buckets(metrics: obs.Metrics) -> N
 
 
 def test_queue_wait_is_observed_once_per_item(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
     for _ in range(4):
         hooks.on_enqueue()
     hooks.on_batch_start(4, oldest_wait_ms=6.0)
@@ -83,7 +83,7 @@ def test_queue_wait_is_observed_once_per_item(metrics: obs.Metrics) -> None:
 
 
 def test_drain_closes_abandoned_items(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
     for _ in range(3):
         hooks.on_enqueue()
     assert hooks.drain_abandoned() == 3
@@ -92,17 +92,16 @@ def test_drain_closes_abandoned_items(metrics: obs.Metrics) -> None:
 
 
 def test_request_span_records_latency(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
     with hooks.request_span("score.request", **{"rs.pairs": 2}):
         pass
     assert sample(metrics, "rs_request_latency_seconds_count") == 1.0
 
 
 def test_latency_is_recorded_even_when_the_request_raises(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
-    with pytest.raises(ValueError):
-        with hooks.request_span():
-            raise ValueError("boom")
+    hooks = obs.ObsHooks(metrics)
+    with pytest.raises(ValueError), hooks.request_span():
+        raise ValueError("boom")
     assert sample(metrics, "rs_request_latency_seconds_count") == 1.0
 
 
@@ -138,7 +137,7 @@ def test_forward_span_carries_batch_size_and_links_every_request(
     metrics: obs.Metrics, recorded: tuple[InMemorySpanExporter, Any]
 ) -> None:
     exporter, tracer = recorded
-    hooks = obs.BatcherHooks(metrics, tracer=tracer)
+    hooks = obs.ObsHooks(metrics, tracer=tracer)
 
     # The request spans stay open across the batch, which is the real ordering:
     # the HTTP handler is still awaiting its result while the forward pass runs.
@@ -187,7 +186,7 @@ def test_back_link_is_skipped_when_the_request_span_already_ended(
     request span, so the batch is auditable even when the request is gone.
     """
     exporter, tracer = recorded
-    hooks = obs.BatcherHooks(metrics, tracer=tracer)
+    hooks = obs.ObsHooks(metrics, tracer=tracer)
     with hooks.request_span() as span:
         hooks.on_enqueue()
         abandoned_id = span.get_span_context().span_id
@@ -203,7 +202,7 @@ def test_queue_wait_span_is_a_child_of_the_request(
     metrics: obs.Metrics, recorded: tuple[InMemorySpanExporter, Any]
 ) -> None:
     exporter, tracer = recorded
-    hooks = obs.BatcherHooks(metrics, tracer=tracer)
+    hooks = obs.ObsHooks(metrics, tracer=tracer)
     with hooks.request_span() as span:
         hooks.on_enqueue()
         root_id = span.get_span_context().span_id
@@ -222,7 +221,7 @@ def test_metrics_endpoint_serves_the_registry(metrics: obs.Metrics) -> None:
 
     app = fastapi.FastAPI()
     obs.mount_metrics(app, metrics)
-    obs.BatcherHooks(metrics).on_complete("ok")
+    obs.ObsHooks(metrics).on_complete("ok")
 
     response = TestClient(app).get("/metrics")
     assert response.status_code == 200
@@ -245,7 +244,7 @@ def test_hooks_against_the_stub_batcher(
     metrics: obs.Metrics, recorded: tuple[InMemorySpanExporter, Any]
 ) -> None:
     exporter, tracer = recorded
-    hooks = obs.BatcherHooks(metrics, tracer=tracer)
+    hooks = obs.ObsHooks(metrics, tracer=tracer)
 
     async def run() -> None:
         batcher = StubBatcher(
@@ -281,7 +280,7 @@ def test_hooks_against_the_stub_batcher(
 
 
 def test_queue_full_is_immediate(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
 
     async def run() -> None:
         batcher = StubBatcher(
@@ -301,7 +300,7 @@ def test_queue_full_is_immediate(metrics: obs.Metrics) -> None:
 
 
 def test_deadline_exceeded_marks_a_rejection(metrics: obs.Metrics) -> None:
-    hooks = obs.BatcherHooks(metrics)
+    hooks = obs.ObsHooks(metrics)
 
     async def run() -> None:
         batcher = StubBatcher(
