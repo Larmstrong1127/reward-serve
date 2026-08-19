@@ -257,8 +257,27 @@ class Upstream:
         self.health = health
 
     # -- circuit breaker -----------------------------------------------------
-    def breaker_allows(self) -> bool:
-        """True if the breaker will let one more request through.
+    def breaker_ready(self) -> bool:
+        """Would the breaker let one more request through? Changes nothing.
+
+        Split from ``breaker_admit`` because routing has to ASK every candidate
+        and TELL only the one it picked. The first version of this class had a
+        single mutating check, ``pick`` filtered on the raw ``breaker is OPEN``
+        instead of calling it, and nothing ever moved a breaker out of OPEN:
+        one worker stayed ejected for the rest of the run. That is visible in
+        results/faults/latency-2s-on-one-worker-before-breaker-recovery/summary.json,
+        where worker B's breaker opens at t=17.3 s and never closes again even
+        after the fault is cleared at t=26 s.
+        """
+        if self.breaker is BreakerState.CLOSED:
+            return True
+        if self.breaker is BreakerState.OPEN:
+            opened = self.breaker_opened_at
+            return opened is not None and self.clock() - opened >= self.breaker_open_s
+        return not self.breaker_probe_inflight
+
+    def breaker_admit(self) -> bool:
+        """Take the slot for one request. Mutates; call only on the pick.
 
         OPEN becomes HALF_OPEN once ``breaker_open_s`` has passed, and HALF_OPEN
         admits exactly one request -- the probe. A second concurrent request
@@ -269,17 +288,13 @@ class Upstream:
         if self.breaker is BreakerState.CLOSED:
             return True
         if self.breaker is BreakerState.OPEN:
-            opened = self.breaker_opened_at
-            if opened is not None and self.clock() - opened >= self.breaker_open_s:
-                self.breaker = BreakerState.HALF_OPEN
-                self.breaker_probe_inflight = False
-            else:
+            if not self.breaker_ready():
                 return False
-        if self.breaker is BreakerState.HALF_OPEN:
-            if self.breaker_probe_inflight:
-                return False
-            self.breaker_probe_inflight = True
-            return True
+            self.breaker = BreakerState.HALF_OPEN
+            self.breaker_probe_inflight = False
+        if self.breaker_probe_inflight:
+            return False
+        self.breaker_probe_inflight = True
         return True
 
     def record_request_result(self, *, failure: bool) -> None:
@@ -310,7 +325,8 @@ class Upstream:
 
     @property
     def eligible(self) -> bool:
-        return self.health is Health.UP and self.breaker is not BreakerState.OPEN
+        """UP, and the breaker would take one more request right now."""
+        return self.health is Health.UP and self.breaker_ready()
 
     def snapshot(self) -> dict[str, Any]:
         return {
@@ -440,9 +456,14 @@ class Router:
         candidates = [
             up for up in self.upstreams if up.eligible and up.name != exclude
         ]
-        if not candidates:
-            return None
-        return min(candidates, key=lambda u: (u.outstanding, u.name))
+        while candidates:
+            chosen = min(candidates, key=lambda u: (u.outstanding, u.name))
+            # Only the chosen worker spends a half-open probe slot. Asking every
+            # candidate would burn the slot of a worker we then did not use.
+            if chosen.breaker_admit():
+                return chosen
+            candidates.remove(chosen)
+        return None
 
     def state_table(self) -> dict[str, Any]:
         return {

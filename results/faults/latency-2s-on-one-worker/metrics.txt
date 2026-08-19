@@ -1,0 +1,56 @@
+# HELP rs_router_upstream_state Health state of one worker as seen by the router: 0 DOWN, 1 SUSPECT, 2 UP.
+# TYPE rs_router_upstream_state gauge
+rs_router_upstream_state{worker="A"} 2.0
+rs_router_upstream_state{worker="B"} 2.0
+# HELP rs_router_retries_total Requests retried on a second worker after a pre-send connection failure.
+# TYPE rs_router_retries_total counter
+rs_router_retries_total 0.0
+# HELP rs_router_retries_created Requests retried on a second worker after a pre-send connection failure.
+# TYPE rs_router_retries_created gauge
+rs_router_retries_created 1.787115266528291e+09
+# HELP rs_router_upstream_latency_seconds Wall time of one router->worker attempt, including a failed one.
+# TYPE rs_router_upstream_latency_seconds histogram
+rs_router_upstream_latency_seconds_bucket{le="0.01",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.025",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.05",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.1",worker="A"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.2",worker="A"} 33.0
+rs_router_upstream_latency_seconds_bucket{le="0.35",worker="A"} 89.0
+rs_router_upstream_latency_seconds_bucket{le="0.5",worker="A"} 116.0
+rs_router_upstream_latency_seconds_bucket{le="0.75",worker="A"} 137.0
+rs_router_upstream_latency_seconds_bucket{le="1.0",worker="A"} 216.0
+rs_router_upstream_latency_seconds_bucket{le="2.0",worker="A"} 223.0
+rs_router_upstream_latency_seconds_bucket{le="3.0",worker="A"} 223.0
+rs_router_upstream_latency_seconds_bucket{le="5.0",worker="A"} 223.0
+rs_router_upstream_latency_seconds_bucket{le="10.0",worker="A"} 223.0
+rs_router_upstream_latency_seconds_bucket{le="+Inf",worker="A"} 223.0
+rs_router_upstream_latency_seconds_count{worker="A"} 223.0
+rs_router_upstream_latency_seconds_sum{worker="A"} 122.0429999998305
+rs_router_upstream_latency_seconds_bucket{le="0.01",worker="B"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.025",worker="B"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.05",worker="B"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.1",worker="B"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.2",worker="B"} 0.0
+rs_router_upstream_latency_seconds_bucket{le="0.35",worker="B"} 1.0
+rs_router_upstream_latency_seconds_bucket{le="0.5",worker="B"} 28.0
+rs_router_upstream_latency_seconds_bucket{le="0.75",worker="B"} 35.0
+rs_router_upstream_latency_seconds_bucket{le="1.0",worker="B"} 35.0
+rs_router_upstream_latency_seconds_bucket{le="2.0",worker="B"} 35.0
+rs_router_upstream_latency_seconds_bucket{le="3.0",worker="B"} 41.0
+rs_router_upstream_latency_seconds_bucket{le="5.0",worker="B"} 42.0
+rs_router_upstream_latency_seconds_bucket{le="10.0",worker="B"} 42.0
+rs_router_upstream_latency_seconds_bucket{le="+Inf",worker="B"} 42.0
+rs_router_upstream_latency_seconds_count{worker="B"} 42.0
+rs_router_upstream_latency_seconds_sum{worker="B"} 36.220999999321066
+# HELP rs_router_upstream_latency_seconds_created Wall time of one router->worker attempt, including a failed one.
+# TYPE rs_router_upstream_latency_seconds_created gauge
+rs_router_upstream_latency_seconds_created{worker="A"} 1.7871152676408172e+09
+rs_router_upstream_latency_seconds_created{worker="B"} 1.7871152676502404e+09
+# HELP rs_router_requests_total Client-visible outcomes of routed requests, by status code.
+# TYPE rs_router_requests_total counter
+rs_router_requests_total{status="200"} 259.0
+rs_router_requests_total{status="504"} 6.0
+# HELP rs_router_requests_created Client-visible outcomes of routed requests, by status code.
+# TYPE rs_router_requests_created gauge
+rs_router_requests_created{status="200"} 1.787115267645777e+09
+rs_router_requests_created{status="504"} 1.7871152784258206e+09

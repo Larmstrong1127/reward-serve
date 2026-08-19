@@ -301,7 +301,38 @@ def test_breaker_opens_after_k_consecutive_failures_and_not_before():
     assert up.breaker is BreakerState.CLOSED
     up.record_request_result(failure=True)
     assert up.breaker is BreakerState.OPEN
-    assert not up.breaker_allows()
+    assert not up.breaker_admit()
+
+
+def test_an_open_breaker_recovers_and_pick_is_what_recovers_it():
+    """The regression for the bug the latency run found.
+
+    `eligible` used to read the raw breaker state, so nothing ever called the
+    method that moves OPEN to HALF_OPEN and a tripped worker stayed ejected
+    forever. Driving it through `pick` -- not through the breaker directly --
+    is what makes this test able to fail.
+    """
+    clock = FakeClock()
+    settings = RouterSettings(worker_urls=("http://a",), breaker_failures=1,
+                              breaker_open_s=5.0, success_threshold=1)
+    rt = Router(settings, metrics=setup_router_metrics(), clock=clock)
+    up = rt.upstreams[0]
+    up.record_probe(True)
+    assert rt.pick() is up
+
+    up.record_request_result(failure=True)
+    assert up.breaker is BreakerState.OPEN
+    assert rt.pick() is None
+
+    clock.advance(5.1)
+    chosen = rt.pick()
+    assert chosen is up, "an open breaker must eventually admit one probe"
+    assert up.breaker is BreakerState.HALF_OPEN
+    assert rt.pick() is None, "the second request must not ride the probe slot"
+
+    up.record_request_result(failure=False)
+    assert up.breaker is BreakerState.CLOSED
+    assert rt.pick() is up
 
 
 def test_a_success_before_the_threshold_resets_the_run():
@@ -320,11 +351,11 @@ def test_breaker_half_opens_after_t_and_admits_exactly_one_probe():
     up.record_request_result(failure=True)
     assert up.breaker is BreakerState.OPEN
     clock.advance(4.9)
-    assert not up.breaker_allows()
+    assert not up.breaker_admit()
     clock.advance(0.2)
-    assert up.breaker_allows()  # the one probe
+    assert up.breaker_admit()  # the one probe
     assert up.breaker is BreakerState.HALF_OPEN
-    assert not up.breaker_allows()  # a second concurrent request is refused
+    assert not up.breaker_admit()  # a second concurrent request is refused
 
 
 def test_a_good_probe_closes_the_breaker_and_a_bad_one_reopens_it():
@@ -332,17 +363,17 @@ def test_a_good_probe_closes_the_breaker_and_a_bad_one_reopens_it():
     up = make_upstream(clock=clock, breaker_failures=1, breaker_open_s=5.0)
     up.record_request_result(failure=True)
     clock.advance(6.0)
-    assert up.breaker_allows()
+    assert up.breaker_admit()
     up.record_request_result(failure=False)
     assert up.breaker is BreakerState.CLOSED
-    assert up.breaker_allows()
+    assert up.breaker_admit()
 
     up.record_request_result(failure=True)
     clock.advance(6.0)
-    assert up.breaker_allows()
+    assert up.breaker_admit()
     up.record_request_result(failure=True)
     assert up.breaker is BreakerState.OPEN
-    assert not up.breaker_allows()
+    assert not up.breaker_admit()
 
 
 def test_an_open_breaker_makes_a_healthy_worker_ineligible():
