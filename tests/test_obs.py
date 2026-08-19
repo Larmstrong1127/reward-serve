@@ -318,3 +318,39 @@ def test_deadline_exceeded_marks_a_rejection(metrics: obs.Metrics) -> None:
 
     asyncio.run(run())
     assert sample(metrics, "rs_rejected_total", reason="deadline_exceeded") == 1.0
+
+
+def test_dropped_items_do_not_leak_the_queue_gauge_or_desync_the_links(
+    metrics: obs.Metrics, recorded: tuple[InMemorySpanExporter, Any]
+) -> None:
+    """The batcher drops timed-out items before the pass, so on_batch_start
+    reports a size that excludes them. If obs did not release them, the FIFO
+    would misalign and every later batch would link the wrong request spans.
+    """
+    exporter, tracer = recorded
+    hooks = obs.ObsHooks(metrics, tracer=tracer)
+
+    scopes = []
+    ids = []
+    for _ in range(5):
+        scope = hooks.request_span()
+        span = scope.__enter__()
+        scopes.append(scope)
+        ids.append(span.get_span_context().span_id)
+        hooks.on_enqueue()
+
+    # The two oldest time out and are dropped; the pass carries the other three.
+    hooks.on_complete("timeout")
+    hooks.on_complete("timeout")
+    hooks.on_batch_start(3, oldest_wait_ms=12.0)
+    hooks.on_batch_end(3, forward_ms=200.0)
+    for scope in scopes:
+        scope.__exit__(None, None, None)
+
+    assert hooks.pending_count == 0
+    assert sample(metrics, "rs_queue_depth") == 0.0
+
+    forward = next(s for s in exporter.get_finished_spans() if s.name == "batch.forward")
+    linked = {link.context.span_id for link in forward.links}
+    # The three survivors, not the two that timed out.
+    assert linked == set(ids[2:])

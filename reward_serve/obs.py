@@ -396,11 +396,34 @@ class ObsHooks:
             span.end()
 
     def on_complete(self, status: str) -> None:
-        """One item reached a terminal state: ok, timeout, cancelled, queue_full."""
+        """One item reached a terminal state: ok, timeout, cancelled, queue_full.
+
+        ``timeout`` and ``cancelled`` items are dropped by the batcher *before*
+        the forward pass, so ``on_batch_start`` reports a batch size that
+        excludes them. Without releasing them here the FIFO would keep entries
+        that no batch will ever claim, the queue-depth gauge would drift upward
+        forever, and every later batch would link to the wrong request spans.
+        A dropped item is released from the head of the FIFO: exact for
+        timeouts, which expire in enqueue order, and an approximation for a
+        client that disconnects from the middle of the queue -- there the count
+        stays right and one link may name the wrong sibling. ``queue_full``
+        items were never enqueued, so there is nothing to release.
+        """
         self.metrics.requests_total.labels(status=status).inc()
         reason = REJECTION_REASONS.get(status)
         if reason is not None:
             self.metrics.rejected_total.labels(reason=reason).inc()
+        if status in ("timeout", "cancelled"):
+            self._release_oldest(status)
+
+    def _release_oldest(self, status: str) -> None:
+        with self._lock:
+            item = self._pending.popleft() if self._pending else None
+        if item is None:
+            return
+        item.wait_span.set_attribute("queue.released_as", status)
+        item.wait_span.end()
+        self.metrics.queue_depth.dec()
 
     def drain_abandoned(self) -> int:
         """Close the spans of items that will never ride a batch, at shutdown.
