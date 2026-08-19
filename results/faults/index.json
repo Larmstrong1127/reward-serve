@@ -1,0 +1,7 @@
+{
+  "scenarios": [
+    "kill-worker-mid-batch"
+  ],
+  "generated_at": "2026-08-18T21:50:59",
+  "command": "python faults/run_faults.py"
+}

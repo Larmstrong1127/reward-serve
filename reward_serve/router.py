@@ -124,6 +124,15 @@ class RouterSettings:
     # request timeout, so a wedged worker is ejected before many clients hit it.
     probe_interval_ms: float = 200.0
     probe_timeout_ms: float = 500.0
+    # 250 ms to establish a TCP connection to a process on loopback, or give up.
+    # This default was not a guess: the first kill-worker run left the retry
+    # working but slow, because a connect to the port of a terminated worker
+    # took ~2.3 s to be refused on this box, and the two retried requests cost
+    # 2.54 s and 2.79 s against a p50 of 0.41 s. See
+    # results/faults/kill-worker-mid-batch-before-connect-timeout/summary.json.
+    # A connect budget far below the request budget is what makes a retry
+    # cheap enough to be worth having.
+    connect_timeout_ms: float = 250.0
     # Three consecutive misses, not one: a single dropped probe on a busy box is
     # noise. Three at 200 ms is 600 ms of consistent silence.
     fail_threshold: int = 3
@@ -146,6 +155,7 @@ class RouterSettings:
             worker_urls=urls,
             probe_interval_ms=float(os.environ.get("RS_PROBE_INTERVAL_MS", "200")),
             probe_timeout_ms=float(os.environ.get("RS_PROBE_TIMEOUT_MS", "500")),
+            connect_timeout_ms=float(os.environ.get("RS_CONNECT_TIMEOUT_MS", "250")),
             fail_threshold=int(os.environ.get("RS_FAIL_THRESHOLD", "3")),
             success_threshold=int(os.environ.get("RS_SUCCESS_THRESHOLD", "2")),
             request_timeout_ms=float(os.environ.get("RS_ROUTER_TIMEOUT_MS", "3000")),
@@ -445,6 +455,7 @@ class Router:
                 "fail_threshold": self.settings.fail_threshold,
                 "success_threshold": self.settings.success_threshold,
                 "request_timeout_ms": self.settings.request_timeout_ms,
+                "connect_timeout_ms": self.settings.connect_timeout_ms,
                 "breaker_failures": self.settings.breaker_failures,
                 "breaker_open_s": self.settings.breaker_open_s,
                 "retry_rule": RETRY_RULE,
@@ -503,7 +514,13 @@ class Router:
                 f"{up.url}/v1/score",
                 content=payload,
                 headers={**headers, "content-type": "application/json"},
-                timeout=budget * 2,
+                # Connect gets its own short budget so a dead worker is refused
+                # fast and the one retry is cheap. Read is set above the router
+                # budget on purpose: asyncio.wait_for in `attempt` is the single
+                # authority on when the client gives up.
+                timeout=httpx.Timeout(
+                    budget * 2, connect=self.settings.connect_timeout_ms / 1000.0
+                ),
             ) as resp:
                 status = resp.status_code
                 body = await resp.aread()
@@ -678,6 +695,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fail-threshold", type=int, default=env.fail_threshold)
     p.add_argument("--success-threshold", type=int, default=env.success_threshold)
     p.add_argument("--request-timeout-ms", type=float, default=env.request_timeout_ms)
+    p.add_argument("--connect-timeout-ms", type=float, default=env.connect_timeout_ms)
     p.add_argument("--breaker-failures", type=int, default=env.breaker_failures)
     p.add_argument("--breaker-open-s", type=float, default=env.breaker_open_s)
     p.add_argument("--log-level", default="warning")
@@ -697,6 +715,7 @@ def main(argv: list[str] | None = None) -> int:
         fail_threshold=args.fail_threshold,
         success_threshold=args.success_threshold,
         request_timeout_ms=args.request_timeout_ms,
+        connect_timeout_ms=args.connect_timeout_ms,
         breaker_failures=args.breaker_failures,
         breaker_open_s=args.breaker_open_s,
     )

@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "skipped": true,
+  "note": "box_quiet was not run; treat every latency figure as indicative"
+}

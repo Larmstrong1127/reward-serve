@@ -1,0 +1,76 @@
+{
+  "scenario": "kill-worker-mid-batch",
+  "measured_at": "2026-08-18T21:50:59",
+  "model": "DantheMan124/deberta-preference-reward",
+  "tier": {
+    "workers": 2,
+    "router_timeout_ms": 3000.0,
+    "queue_depth": 256,
+    "max_batch_size": 8,
+    "concurrency": 4,
+    "duration_s": 24.0,
+    "warmup_s": 4.0
+  },
+  "box_quiet_passed": false,
+  "latency_figures_are_indicative_only": true,
+  "sampling_interval_s": 0.1,
+  "injections": [
+    {
+      "t": 10.0088,
+      "what": "terminate worker B",
+      "pid": 62484
+    }
+  ],
+  "question": "what does the client see when a worker is killed mid-batch",
+  "killed_worker": "B",
+  "killed_at_s": 10.009,
+  "requests_measured": 186,
+  "requests_after_kill": 155,
+  "failed_requests_after_kill": 0,
+  "failure_statuses": {},
+  "served_split_before_kill": {
+    "A": 17,
+    "B": 14
+  },
+  "served_split_after_kill": {
+    "A": 155
+  },
+  "first_request_served_only_by_A_at_s": 10.119,
+  "convergence_after_kill_s": 0.11,
+  "router_state_transitions_B": [
+    {
+      "t": 0.0159,
+      "state": "UP",
+      "breaker": "CLOSED"
+    },
+    {
+      "t": 10.7428,
+      "state": "SUSPECT",
+      "breaker": "CLOSED"
+    },
+    {
+      "t": 12.2393,
+      "state": "DOWN",
+      "breaker": "CLOSED"
+    }
+  ],
+  "B_first_seen_SUSPECT_at_s": 10.7428,
+  "B_first_seen_DOWN_at_s": 12.2393,
+  "retried_requests": 2,
+  "retried_outcomes": {
+    "200": 2
+  },
+  "router_retries_total": 2.0,
+  "unsafe_retries": 0,
+  "unsafe_retries_note": "A retry is only issued for a pre-send connection failure, so no request that reached a worker can be retried. Enforced by tests/test_router.py::test_a_500_that_reached_a_worker_is_never_retried.",
+  "status_counts": {
+    "200": 184,
+    "502": 2
+  },
+  "latency": {
+    "n_ok": 184,
+    "p50_ms": 414.77,
+    "p99_ms": 2535.896,
+    "max_ms": 2785.248
+  }
+}
