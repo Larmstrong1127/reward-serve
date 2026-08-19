@@ -1,0 +1,163 @@
+{
+  "requests": 10,
+  "http_200": 10,
+  "served_by": {
+    "A": 5,
+    "B": 5
+  },
+  "distinct_workers_used": 2,
+  "retried_any": false,
+  "max_batch_size_observed": 4,
+  "model": "DantheMan124/deberta-preference-reward",
+  "state_table_at_start": {
+    "wall_time": 1787114840.3832538,
+    "monotonic": 865493.64,
+    "workers": [
+      {
+        "name": "A",
+        "url": "http://127.0.0.1:8001",
+        "state": "UP",
+        "eligible": true,
+        "outstanding": 0,
+        "consecutive_failures": 0,
+        "consecutive_successes": 3,
+        "last_probe_ok": true,
+        "breaker": "CLOSED",
+        "breaker_consecutive_failures": 0,
+        "transitions": 1
+      },
+      {
+        "name": "B",
+        "url": "http://127.0.0.1:8002",
+        "state": "UP",
+        "eligible": true,
+        "outstanding": 0,
+        "consecutive_failures": 0,
+        "consecutive_successes": 3,
+        "last_probe_ok": true,
+        "breaker": "CLOSED",
+        "breaker_consecutive_failures": 0,
+        "transitions": 1
+      }
+    ],
+    "eligible_count": 2,
+    "settings": {
+      "probe_interval_ms": 200.0,
+      "fail_threshold": 3,
+      "success_threshold": 2,
+      "request_timeout_ms": 3000.0,
+      "breaker_failures": 5,
+      "breaker_open_s": 5.0,
+      "retry_rule": "one retry, connection failures only, before any bytes were sent"
+    }
+  },
+  "cross_tier_trace": {
+    "trace_id": "0x387ec6635caefc58841c8809396627ad",
+    "worker": "A",
+    "router_spans": [
+      "router.request"
+    ],
+    "worker_spans": [
+      "queue.wait",
+      "score.request"
+    ],
+    "parent_of_worker_span": "0x1810538c54a018c2",
+    "batch_forward_spans_linking_this_trace": 1,
+    "batch_sizes_linked": [
+      1
+    ]
+  },
+  "rows": [
+    {
+      "i": 0,
+      "status": 200,
+      "worker": "A",
+      "retried": "0",
+      "batch_size": 1,
+      "score": -3.597531795501709,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 1,
+      "status": 200,
+      "worker": "B",
+      "retried": "0",
+      "batch_size": 1,
+      "score": -3.801632881164551,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 2,
+      "status": 200,
+      "worker": "A",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -1.510670781135559,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 3,
+      "status": 200,
+      "worker": "B",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -2.9405994415283203,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 4,
+      "status": 200,
+      "worker": "A",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -3.328110933303833,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 5,
+      "status": 200,
+      "worker": "B",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -2.3380002975463867,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 6,
+      "status": 200,
+      "worker": "A",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -1.4871690273284912,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 7,
+      "status": 200,
+      "worker": "B",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -2.5985021591186523,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 8,
+      "status": 200,
+      "worker": "A",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -1.5621126890182495,
+      "model": "DantheMan124/deberta-preference-reward"
+    },
+    {
+      "i": 9,
+      "status": 200,
+      "worker": "B",
+      "retried": "0",
+      "batch_size": 4,
+      "score": -1.669176459312439,
+      "model": "DantheMan124/deberta-preference-reward"
+    }
+  ],
+  "note": "Structural dry run. No latency figure is published from it and the box was not required to be quiet."
+}

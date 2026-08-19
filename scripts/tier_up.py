@@ -89,10 +89,15 @@ class Tier:
     # subprocess stdout, which is what the dry run needs to show one trace id
     # crossing both tiers, and what a load run must never turn on.
     trace: str = "off"
+    # When set, each subprocess's stdout+stderr goes to its own file here. The
+    # dry run needs this to read the spans back; a load run leaves it None so
+    # nothing is written on the hot path.
+    log_dir: Path | None = None
     python: str = sys.executable
     workers: list[WorkerProc] = field(default_factory=list)
     router: subprocess.Popen[bytes] | None = None
     router_pid: int | None = None
+    _logs: list[Any] = field(default_factory=list, repr=False)
 
     @property
     def router_url(self) -> str:
@@ -113,6 +118,20 @@ class Tier:
             env["OTEL_SDK_DISABLED"] = "true"
         return env
 
+    def _sink(self, tag: str) -> dict[str, Any]:
+        """stdout/stderr kwargs for one subprocess."""
+        if self.log_dir is None:
+            return {}
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        fh = (self.log_dir / f"{tag}.log").open("wb")
+        self._logs.append(fh)
+        return {"stdout": fh, "stderr": subprocess.STDOUT}
+
+    def log_path(self, tag: str) -> Path:
+        if self.log_dir is None:
+            raise ValueError("this tier was started without a log_dir")
+        return self.log_dir / f"{tag}.log"
+
     def up(self, timeout_s: float = 300.0) -> dict[str, Any]:
         """Start everything and wait until the router says all workers are UP."""
         env = self._env()
@@ -127,7 +146,9 @@ class Tier:
                    "--port", str(port), "--name", name]
             if self.synthetic:
                 cmd.append("--synthetic")
-            proc = subprocess.Popen(cmd, env=wenv, cwd=str(REPO_ROOT))
+            proc = subprocess.Popen(
+                cmd, env=wenv, cwd=str(REPO_ROOT), **self._sink(f"worker-{name}")
+            )
             self.workers.append(
                 WorkerProc(name=name, port=port, url=f"http://127.0.0.1:{port}",
                            proc=proc, pid=proc.pid)
@@ -143,7 +164,7 @@ class Tier:
              "--workers", renv["RS_WORKER_URLS"],
              "--request-timeout-ms", str(self.router_timeout_ms),
              "--probe-interval-ms", str(self.probe_interval_ms)],
-            env=renv, cwd=str(REPO_ROOT),
+            env=renv, cwd=str(REPO_ROOT), **self._sink("router"),
         )
         self.router_pid = self.router.pid
         _wait_ready(f"{self.router_url}/healthz", 60.0)
@@ -182,6 +203,10 @@ class Tier:
             _stop(w.proc)
         _stop(self.router)
         self.router = None
+        for fh in self._logs:
+            with contextlib.suppress(Exception):
+                fh.close()
+        self._logs.clear()
         STATE_FILE.unlink(missing_ok=True)
 
     def _save_state(self) -> None:
