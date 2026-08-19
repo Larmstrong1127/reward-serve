@@ -103,11 +103,14 @@ class ServerState:
         self.batcher: ContinuousBatcher | None = None
         self.hooks = BatcherHooks()
         self.draining = False
+        # True once a scorer is in place. A stub scorer counts as loaded, so the
+        # readiness semantics are the same in tests as in a real run.
+        self.model_loaded = False
 
     @property
     def ready(self) -> bool:
         return (
-            self.model is not None
+            self.model_loaded
             and self.batcher is not None
             and self.batcher.running
             and not self.draining
@@ -135,6 +138,7 @@ def create_app(
             active: Scorer = state.model
         else:
             active = scorer
+        state.model_loaded = True
         state.batcher = ContinuousBatcher(
             active,
             max_batch_size=cfg.max_batch_size,
@@ -174,7 +178,7 @@ def create_app(
         batcher_running = state.batcher is not None and state.batcher.running
         body = {
             "status": "ready",
-            "model_loaded": state.model is not None or scorer is not None,
+            "model_loaded": state.model_loaded,
             "batcher_running": batcher_running,
         }
         if state.draining:
