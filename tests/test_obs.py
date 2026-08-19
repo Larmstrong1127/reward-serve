@@ -10,9 +10,9 @@ import pytest
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from stub_batcher import DeadlineExceeded, QueueFull, StubBatcher
 
 from reward_serve import obs
-from stub_batcher import DeadlineExceeded, QueueFull, StubBatcher
 
 
 @pytest.fixture()
