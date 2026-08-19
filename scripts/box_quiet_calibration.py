@@ -32,7 +32,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.box_quiet import CPU_MAX, GPU_MAX, measure  # noqa: E402
+from scripts.box_quiet import CPU_MAX, GPU_UTIL_MEAN_MAX, measure  # noqa: E402
 
 
 def main(n_samples: int) -> int:
@@ -71,8 +71,8 @@ def main(n_samples: int) -> int:
             "min": min(gpu) if gpu else None,
             "median": round(statistics.median(gpu), 2) if gpu else None,
             "max": max(gpu) if gpu else None,
-            "threshold": GPU_MAX,
-            "samples_under_threshold": sum(1 for v in gpu if v < GPU_MAX),
+            "threshold": GPU_UTIL_MEAN_MAX,
+            "samples_under_threshold": sum(1 for v in gpu if v < GPU_UTIL_MEAN_MAX),
             "note": (
                 "This is a MAX over the window, not a mean. One frame of desktop "
                 "compositing spikes it, so a browser or a chat client left open "
