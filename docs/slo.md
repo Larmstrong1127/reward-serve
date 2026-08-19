@@ -1,0 +1,224 @@
+# reward-serve SLO
+
+Scope: one server process on one machine, serving
+`DantheMan124/deberta-preference-reward` on CPU. There is no second node and no
+failover, so this document describes what one process owes its callers and how
+much of that it is allowed to fail to deliver before work stops and someone
+fixes it.
+
+Window: **30 days, rolling.**
+
+## 1. The two SLIs
+
+Both are measured from `rs_requests_total` and `rs_request_latency_seconds`,
+which count **scored items**, not HTTP requests: a Form B request carrying eight
+pairs contributes eight. The item is the batcher's unit of work and therefore
+the unit a promise can honestly be made about.
+
+### Availability
+
+The share of items that reached a terminal state other than a server fault or a
+timeout. Concretely: `status="ok"` over all terminal statuses. `queue_full`
+counts **against** availability, deliberately — a 429 is a promise the server
+declined to keep, and hiding load-shedding outside the SLI is the classic way to
+make a dashboard green while callers are unhappy.
+
+```promql
+sum(rate(rs_requests_total{status="ok"}[30d]))
+  /
+sum(rate(rs_requests_total[30d]))
+```
+
+**Target: 99.5%.**
+
+### Latency
+
+The share of items whose end-to-end server-side latency was under a fixed
+threshold. Not a percentile of a percentile: the numerator is a bucket count, so
+the number is exact rather than interpolated.
+
+```promql
+sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30d]))
+  /
+sum(rate(rs_request_latency_seconds_count[30d]))
+```
+
+**Target: 99% of items under the threshold.**
+
+## 2. Where the latency threshold comes from
+
+A threshold picked because it is a round number is decoration. This one is
+derived from the cost of a forward pass on this machine, by this rule:
+
+    threshold = the smallest LATENCY_BUCKETS edge >= 3 x (p_max_forward_ms + MAX_WAIT_MS)
+
+where `p_max_forward_ms` is the slowest forward pass observed in the ten-request
+CPU dry run and `MAX_WAIT_MS` is the batcher's flush timer (default 10 ms). The
+factor of three is the headroom the queue is allowed to consume before a request
+counts as late: one forward pass to run, plus room for an item to miss a batch
+and ride the next one, plus margin. Rounding **up to a bucket edge** matters —
+the SLI is a bucket count, so a threshold that is not an edge cannot be measured
+without interpolating, which would put an estimate at the centre of the error
+budget.
+
+The measurement command is:
+
+    cd D:\ClaudeProjects\reward-serve-wt-observability
+    D:\ClaudeProjects\reward-serve\.venv\Scripts\python.exe scripts/forward_dry_run.py
+
+It refuses to run on a contended box (`scripts/box_quiet.py`, charter rule 3)
+and writes `results/forward_dry_run.json` next to the box-quiet report that
+gated it.
+
+> **Status: the threshold is not set.** Every attempt so far has been refused by
+> the box-quiet gate — GPU utilisation pinned at 100% with 22 GB resident, from
+> other work that owns the GPU on this machine, and host CPU between 20% and 36%
+> against a 15% ceiling. The refusals are recorded in
+> `results/box_quiet_forward_dry_run.json`. A forward time measured against that
+> would be a measurement of the render job, not of this server, so no number is
+> published and the threshold below is left as `<THRESHOLD>` on purpose. The
+> derivation rule, the buckets it must round to, and the command that produces
+> it are all fixed; only the number is missing, and it takes one quiet run to
+> fill in. Nothing downstream — the burn-rate maths, the alert windows, the
+> availability SLO — depends on it.
+
+## 3. Error budget
+
+At a 99.5% availability target over a 30-day window:
+
+- **In time.** 30 days = 43,200 minutes. Budget = 0.5% = **216 minutes**, or
+  3 hours 36 minutes of total unavailability per 30 days. Since this is one
+  process on one machine, that budget is also the entire maintenance allowance:
+  a restart to pick up a new checkpoint spends from the same 216 minutes as an
+  outage does, because to a caller they are the same event.
+- **In items.** Budget = 0.5% of items served, so **5,000 failed items per
+  1,000,000 served**. At a reference rate of 1 item/second the 30-day window
+  holds 2,592,000 items and the budget is **12,960 items**. That reference rate
+  is an assumption used to make the number concrete, not a measured throughput;
+  no load sweep has been run yet, so the honest form of the budget is the ratio,
+  and the live count is:
+
+```promql
+0.005 * sum(increase(rs_requests_total[30d]))
+```
+
+with what remains of it:
+
+```promql
+1 - (
+  (1 - (sum(rate(rs_requests_total{status="ok"}[30d])) / sum(rate(rs_requests_total[30d]))))
+  / 0.005
+)
+```
+
+The latency budget is 1% of items over the same window: **10,000 late items per
+1,000,000 served**, or 25,920 at the reference rate. It is a separate budget
+from the availability one. A service that is up and slow is failing, and
+merging the two lets a latency regression hide inside an availability surplus.
+
+## 4. Burn-rate alerts
+
+Two windows per alert, following the multi-window multi-burn pattern: the long
+window decides that something is wrong, and the short window decides that it is
+still wrong right now. Without the short window an alert keeps firing for an
+hour after a five-minute blip has ended; without the long one a single bad
+second pages someone.
+
+| alert | windows | multiplier | budget consumed before it fires | action |
+|---|---|---|---|---|
+| fast | 1h **and** 5m | **14.4x** | 2% of the 30-day budget | page |
+| slow | 6h **and** 30m | **6x** | 5% of the 30-day budget | ticket |
+
+Where the multipliers come from: burning at 1x exhausts the budget in exactly
+30 days. 14.4x exhausts it in 30/14.4 ≈ 2.1 days, and over a 1-hour window that
+rate has already spent 1h/720h × 14.4 = 2% of the month's budget — enough to
+justify waking someone. 6x exhausts it in 5 days, and over 6 hours has spent
+6/720 × 6 = 5%; that is a real leak but not a 3am one.
+
+### Availability burn
+
+Fast (page):
+
+```promql
+(
+  (1 - (sum(rate(rs_requests_total{status="ok"}[1h])) / sum(rate(rs_requests_total[1h])))) > (14.4 * 0.005)
+)
+and
+(
+  (1 - (sum(rate(rs_requests_total{status="ok"}[5m])) / sum(rate(rs_requests_total[5m])))) > (14.4 * 0.005)
+)
+```
+
+Slow (ticket):
+
+```promql
+(
+  (1 - (sum(rate(rs_requests_total{status="ok"}[6h])) / sum(rate(rs_requests_total[6h])))) > (6 * 0.005)
+)
+and
+(
+  (1 - (sum(rate(rs_requests_total{status="ok"}[30m])) / sum(rate(rs_requests_total[30m])))) > (6 * 0.005)
+)
+```
+
+### Latency burn
+
+Fast (page):
+
+```promql
+(
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[1h])) / sum(rate(rs_request_latency_seconds_count[1h])))) > (14.4 * 0.01)
+)
+and
+(
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[5m])) / sum(rate(rs_request_latency_seconds_count[5m])))) > (14.4 * 0.01)
+)
+```
+
+Slow (ticket):
+
+```promql
+(
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[6h])) / sum(rate(rs_request_latency_seconds_count[6h])))) > (6 * 0.01)
+)
+and
+(
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30m])) / sum(rate(rs_request_latency_seconds_count[30m])))) > (6 * 0.01)
+)
+```
+
+The alert rules are committed at `docker/rules/slo_burn.yml`; the availability
+pair is live, and the latency pair is present but commented out until the
+threshold above is measured, because a rule referring to a bucket edge that has
+not been chosen would silently match nothing and look healthy.
+
+The dashboard panels "Fast burn", "Slow burn" and "Latency burn" plot these same
+expressions divided by their budget ratio, so the y-axis reads directly in
+multiples of 1x and the alert thresholds are horizontal lines at 14.4 and 6.
+
+## 5. What this SLO deliberately does not cover
+
+It says nothing about whether the scores are any good. A server can return a
+well-formed number in 40 milliseconds for every request in the window and be
+ranking responses no better than a coin flip; the pairwise accuracy of the
+checkpoint (0.7026 on UltraFeedback test_prefs, N=1987) is a property of the
+model card, is measured offline, and is completely invisible to every query in
+this document. Nor does it cover throughput: nothing here promises a request
+rate, so a server that meets both targets while accepting three items a second
+is compliant. It excludes 422s, since a malformed request is the caller's fault
+and counting it would let a broken client drain a budget the server cannot
+defend. It excludes anything before the socket — client-side time, network,
+retries — because this process cannot see it. And it makes no availability
+promise about the machine: the process can only fail requests while it is
+running, so an unplanned host reboot spends budget without any of these series
+recording a single failed item. That last gap is the widest one, and it is the
+reason the 216 minutes is treated as covering maintenance too.
+
+## Not done
+
+- No load sweep has been run, so the request-count form of the error budget
+  rests on a stated reference rate rather than on measured traffic.
+- The latency threshold is not measured (see section 2).
+- No alertmanager routes these rules to a person.
+- No burn-rate alert exists on queue depth or batch size; they are diagnostic
+  panels, not objectives.

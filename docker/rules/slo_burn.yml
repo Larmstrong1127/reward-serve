@@ -1,0 +1,119 @@
+# Burn-rate rules for the SLO in docs/slo.md. One server, one machine.
+#
+# Multi-window multi-burn: the long window says something is wrong, the short
+# window says it is still wrong now. Multipliers and their arithmetic are
+# derived in docs/slo.md section 4.
+#
+#   availability target 99.5%  -> budget ratio 0.005
+#   latency      target 99.0%  -> budget ratio 0.010
+groups:
+  - name: reward-serve-slo
+    interval: 30s
+    rules:
+      # -- recording rules: the SLIs, computed once, read by everything else --
+      - record: rs:availability_sli:ratio_rate5m
+        expr: |
+          sum(rate(rs_requests_total{status="ok"}[5m]))
+            / sum(rate(rs_requests_total[5m]))
+
+      - record: rs:availability_sli:ratio_rate1h
+        expr: |
+          sum(rate(rs_requests_total{status="ok"}[1h]))
+            / sum(rate(rs_requests_total[1h]))
+
+      - record: rs:availability_sli:ratio_rate30m
+        expr: |
+          sum(rate(rs_requests_total{status="ok"}[30m]))
+            / sum(rate(rs_requests_total[30m]))
+
+      - record: rs:availability_sli:ratio_rate6h
+        expr: |
+          sum(rate(rs_requests_total{status="ok"}[6h]))
+            / sum(rate(rs_requests_total[6h]))
+
+      - record: rs:availability_budget_remaining:ratio30d
+        expr: |
+          1 - (
+            (1 - (sum(rate(rs_requests_total{status="ok"}[30d]))
+                    / sum(rate(rs_requests_total[30d]))))
+            / 0.005
+          )
+
+      # -- alerts: availability -------------------------------------------
+      - alert: RewardServeAvailabilityFastBurn
+        expr: |
+          (1 - rs:availability_sli:ratio_rate1h) > (14.4 * 0.005)
+          and
+          (1 - rs:availability_sli:ratio_rate5m) > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: page
+          slo: availability
+        annotations:
+          summary: "reward-serve is burning its availability budget at 14.4x"
+          description: >
+            Over the last hour, and still over the last five minutes, more than
+            7.2% of scored items failed. At this rate the 30-day budget is gone
+            in about two days. Open the error-rate panel first: queue_full means
+            offered load, deadline_exceeded means the forward path.
+
+      - alert: RewardServeAvailabilitySlowBurn
+        expr: |
+          (1 - rs:availability_sli:ratio_rate6h) > (6 * 0.005)
+          and
+          (1 - rs:availability_sli:ratio_rate30m) > (6 * 0.005)
+        for: 15m
+        labels:
+          severity: ticket
+          slo: availability
+        annotations:
+          summary: "reward-serve is burning its availability budget at 6x"
+          description: >
+            A steady leak rather than an outage: 5% of the 30-day budget is
+            already spent over six hours. Ticket, not a page.
+
+      # -- alerts: latency -------------------------------------------------
+      # Held back on purpose. The SLI needs a le= bucket edge, and the threshold
+      # in docs/slo.md section 2 has not been measured yet: every dry run so far
+      # was refused by the box-quiet gate. A rule written against a bucket edge
+      # nobody chose would match no series and report healthy, which is worse
+      # than having no rule. Uncomment and substitute the measured edge (one of
+      # the LATENCY_BUCKETS values in reward_serve/obs.py) once
+      # results/forward_dry_run.json exists.
+      #
+      # - alert: RewardServeLatencyFastBurn
+      #   expr: |
+      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[1h]))
+      #             / sum(rate(rs_request_latency_seconds_count[1h])))) > (14.4 * 0.01)
+      #     and
+      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[5m]))
+      #             / sum(rate(rs_request_latency_seconds_count[5m])))) > (14.4 * 0.01)
+      #   for: 2m
+      #   labels:
+      #     severity: page
+      #     slo: latency
+      #
+      # - alert: RewardServeLatencySlowBurn
+      #   expr: |
+      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[6h]))
+      #             / sum(rate(rs_request_latency_seconds_count[6h])))) > (6 * 0.01)
+      #     and
+      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30m]))
+      #             / sum(rate(rs_request_latency_seconds_count[30m])))) > (6 * 0.01)
+      #   for: 15m
+      #   labels:
+      #     severity: ticket
+      #     slo: latency
+
+      # -- alerts: the telemetry itself ------------------------------------
+      - alert: RewardServeNoMetrics
+        expr: up{job="reward-serve"} == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "Prometheus cannot scrape reward-serve"
+          description: >
+            Every SLO panel will read as healthy while this is firing, because
+            an absent series is not a failed request. Check the server before
+            trusting any other panel.

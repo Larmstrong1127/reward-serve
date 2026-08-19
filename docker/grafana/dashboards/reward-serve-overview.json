@@ -1,0 +1,374 @@
+{
+  "uid": "rs-overview",
+  "title": "reward-serve overview",
+  "description": "One server on one machine. Panels are ordered the way an incident is actually worked: is it failing, is it slow, is it queueing, is it batching, and how fast is the error budget going.",
+  "tags": ["reward-serve", "slo"],
+  "timezone": "browser",
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "slo_latency_le",
+        "label": "Latency SLI bucket (seconds)",
+        "type": "constant",
+        "hide": 2,
+        "query": "0.350",
+        "current": { "text": "0.350", "value": "0.350" }
+      },
+      {
+        "name": "slo_latency_target",
+        "label": "Latency SLO target",
+        "type": "constant",
+        "hide": 2,
+        "query": "0.99",
+        "current": { "text": "0.99", "value": "0.99" }
+      },
+      {
+        "name": "slo_availability_target",
+        "label": "Availability SLO target",
+        "type": "constant",
+        "hide": 2,
+        "query": "0.995",
+        "current": { "text": "0.995", "value": "0.995" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request rate by status",
+      "description": "rs_requests_total is per scored item, not per HTTP request: a Form B request with eight pairs counts eight times. Flat at zero here with traffic arriving means the batcher stopped, not that the clients stopped.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10, "lineWidth": 2 } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum by (status) (rate(rs_requests_total[1m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Error rate (non-ok share) and rejections by reason",
+      "description": "The blue line is 1 minus the availability SLI. The stacked lines split it into the two ways this server refuses work: queue_full (offered load above capacity) and deadline_exceeded (the queue drained too slowly to meet the deadline). Which one is moving decides whether you shed load or fix latency.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "min": 0, "custom": { "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "1 - (sum(rate(rs_requests_total{status=\"ok\"}[5m])) / clamp_min(sum(rate(rs_requests_total[5m])), 0.001))",
+          "legendFormat": "error rate"
+        },
+        {
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "sum by (reason) (rate(rs_rejected_total[5m])) / clamp_min(sum(rate(rs_requests_total[5m])), 0.001)",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Request latency p50 / p95 / p99",
+      "description": "Read off rs_request_latency_seconds, whose buckets are cut for a 20-500 ms service (see reward_serve/obs.py). The dashed threshold is the latency SLI bucket edge. p50 rising with p99 means the whole service slowed; p99 rising alone means a few requests are waiting on a batch they keep missing.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2, "fillOpacity": 0 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.35 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(rs_request_latency_seconds_bucket[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(rs_request_latency_seconds_bucket[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(rs_request_latency_seconds_bucket[5m])))",
+          "legendFormat": "p99"
+        },
+        {
+          "refId": "D",
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(rs_forward_seconds_bucket[5m])))",
+          "legendFormat": "p95 forward only"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Queue depth and queue wait p95",
+      "description": "rs_queue_depth is instantaneous. Depth near QUEUE_DEPTH (256) with 429s on the error panel is saturation. Depth near zero while queue wait sits at MAX_WAIT_MS means the flush timer, not the queue, is what each request is waiting on.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": {
+        "defaults": { "custom": { "fillOpacity": 15 } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "queue wait p95" },
+            "properties": [
+              { "id": "unit", "value": "s" },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "rs_queue_depth",
+          "legendFormat": "queue depth"
+        },
+        {
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(rs_queue_wait_seconds_bucket[5m])))",
+          "legendFormat": "queue wait p95"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "heatmap",
+      "title": "Achieved batch size distribution",
+      "description": "Buckets 1,2,4,8,16,32,64. Everything sitting in the le=1 bucket means the server is doing no batching at all, whatever the config says, and every forward pass is paying full cost for one item.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "options": {
+        "calculate": false,
+        "cellGap": 2,
+        "color": { "mode": "scheme", "scheme": "Oranges", "steps": 32 },
+        "yAxis": { "unit": "short" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum by (le) (rate(rs_batch_size_bucket[1m]))",
+          "format": "heatmap",
+          "legendFormat": "{{le}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Mean achieved batch size",
+      "description": "rs_batch_size_sum over rs_batch_size_count. One number to answer whether batching is happening.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 17 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 1.5 },
+              { "color": "green", "value": 3 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum(rate(rs_batch_size_sum[5m])) / clamp_min(sum(rate(rs_batch_size_count[5m])), 0.001)"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Latency SLI (share under $slo_latency_le s, 30d)",
+      "description": "The compliance number the error budget is spent from.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 17 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 0.99 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum(rate(rs_request_latency_seconds_bucket{le=\"$slo_latency_le\"}[30d])) / clamp_min(sum(rate(rs_request_latency_seconds_count[30d])), 0.001)"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Fast burn: availability, 1h and 5m windows (page at 14.4x)",
+      "description": "Burn rate is the observed error ratio divided by the budget ratio. 14.4x on both windows burns a 30-day budget in about two days and is worth waking someone for; the 5m window is what stops a page firing on a burst that already ended.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 5 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 14.4 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_requests_total{status=\"ok\"}[1h])) / clamp_min(sum(rate(rs_requests_total[1h])), 0.001))) / (1 - $slo_availability_target)",
+          "legendFormat": "1h burn"
+        },
+        {
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_requests_total{status=\"ok\"}[5m])) / clamp_min(sum(rate(rs_requests_total[5m])), 0.001))) / (1 - $slo_availability_target)",
+          "legendFormat": "5m burn"
+        },
+        {
+          "refId": "C",
+          "editorMode": "code",
+          "expr": "vector(14.4)",
+          "legendFormat": "page threshold"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Slow burn: availability, 6h and 30m windows (ticket at 6x)",
+      "description": "The slow pair catches a small, steady leak that never trips the fast alert but still empties the budget inside the window. It raises a ticket, not a page.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 5 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 6 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_requests_total{status=\"ok\"}[6h])) / clamp_min(sum(rate(rs_requests_total[6h])), 0.001))) / (1 - $slo_availability_target)",
+          "legendFormat": "6h burn"
+        },
+        {
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_requests_total{status=\"ok\"}[30m])) / clamp_min(sum(rate(rs_requests_total[30m])), 0.001))) / (1 - $slo_availability_target)",
+          "legendFormat": "30m burn"
+        },
+        {
+          "refId": "C",
+          "editorMode": "code",
+          "expr": "vector(6)",
+          "legendFormat": "ticket threshold"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Latency burn: fast (1h/5m) and slow (6h/30m)",
+      "description": "The same two-window pattern applied to the latency SLI, so a service that is up but slow still spends a budget and still alerts.",
+      "datasource": { "type": "prometheus", "uid": "rs-prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 34 },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_request_latency_seconds_bucket{le=\"$slo_latency_le\"}[1h])) / clamp_min(sum(rate(rs_request_latency_seconds_count[1h])), 0.001))) / (1 - $slo_latency_target)",
+          "legendFormat": "1h latency burn"
+        },
+        {
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_request_latency_seconds_bucket{le=\"$slo_latency_le\"}[5m])) / clamp_min(sum(rate(rs_request_latency_seconds_count[5m])), 0.001))) / (1 - $slo_latency_target)",
+          "legendFormat": "5m latency burn"
+        },
+        {
+          "refId": "C",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_request_latency_seconds_bucket{le=\"$slo_latency_le\"}[6h])) / clamp_min(sum(rate(rs_request_latency_seconds_count[6h])), 0.001))) / (1 - $slo_latency_target)",
+          "legendFormat": "6h latency burn"
+        },
+        {
+          "refId": "D",
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(rs_request_latency_seconds_bucket{le=\"$slo_latency_le\"}[30m])) / clamp_min(sum(rate(rs_request_latency_seconds_count[30m])), 0.001))) / (1 - $slo_latency_target)",
+          "legendFormat": "30m latency burn"
+        }
+      ]
+    }
+  ]
+}
