@@ -29,9 +29,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from reward_serve import obs  # noqa: E402
-from scripts.box_quiet import require_quiet  # noqa: E402
-from tests.stub_batcher import StubBatcher  # noqa: E402
+from reward_serve import obs
+from scripts.box_quiet import require_quiet
+from tests.stub_batcher import StubBatcher
 
 MODEL_ID = os.environ.get("MODEL_ID", "DantheMan124/deberta-preference-reward")
 N_REQUESTS = 10

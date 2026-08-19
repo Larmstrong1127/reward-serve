@@ -1,0 +1,57 @@
+# Collector for one server process on one machine.
+#
+# Traces: OTLP gRPC in on :4317, batched, out to Jaeger over OTLP.
+# Metrics: the server's own numbers are scraped by Prometheus straight from
+# /metrics, so the collector does not sit in that path. What it does expose on
+# :8889 is span-derived metrics plus its own internal counters, which is how you
+# tell "the server stopped emitting" from "the collector stopped forwarding" --
+# a distinction worth having at 3am.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch:
+    timeout: 2s
+    send_batch_size: 512
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 384
+    spike_limit_mib: 96
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        # Same edges as LATENCY_BUCKETS in reward_serve/obs.py, so a quantile
+        # read here and one read off rs_request_latency_seconds agree.
+        buckets: [10ms, 20ms, 30ms, 45ms, 65ms, 90ms, 125ms, 175ms, 250ms, 350ms, 500ms, 750ms, 1s, 2500ms, 5s]
+    dimensions:
+      - name: batch.size
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: otelcol
+    send_timestamps: true
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/jaeger, spanmetrics]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      processors: [batch]
+      exporters: [prometheus]

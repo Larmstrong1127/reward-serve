@@ -431,16 +431,20 @@ def _add_link(span: Span, ctx: SpanContext, kind: str) -> None:
     ``Span.add_link`` landed in the OpenTelemetry Python SDK in 1.28. On older
     SDKs the back-link is recorded as attributes instead, so the batch is still
     findable from the request, just not clickable.
+
+    A span that has already ended silently refuses both, which is correct: it
+    happens when the client went away before its item was batched, and there is
+    nothing left to annotate. The forward span still links to it, so the
+    relationship survives from the batch side.
     """
-    if not ctx.is_valid:
+    if not ctx.is_valid or not span.is_recording():
         return
     add_link = getattr(span, "add_link", None)
     if callable(add_link):
         add_link(ctx, {"link.kind": kind})
         return
-    if span.is_recording():  # pragma: no cover - older SDKs only
-        span.set_attribute("batch.trace_id", format(ctx.trace_id, "032x"))
-        span.set_attribute("batch.span_id", format(ctx.span_id, "016x"))
+    span.set_attribute("batch.trace_id", format(ctx.trace_id, "032x"))  # pragma: no cover
+    span.set_attribute("batch.span_id", format(ctx.span_id, "016x"))  # pragma: no cover
 
 
 def documented_buckets() -> dict[str, Sequence[float]]:

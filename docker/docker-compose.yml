@@ -1,0 +1,108 @@
+# reward-serve plus its telemetry, on one machine. Five containers on one
+# Docker host: this is a local observability stack, not a multi-node one.
+#
+#   server  -> otel-collector -> jaeger      (traces)
+#   server  <- prometheus                    (metrics, scraped from /metrics)
+#   grafana -> prometheus, jaeger            (dashboards)
+#
+# Bring up:  docker compose -f docker/docker-compose.yml up -d --build
+# Grafana:   http://localhost:3000  (anonymous viewer, no login)
+# Jaeger:    http://localhost:16686
+# Prom:      http://localhost:9090
+
+name: reward-serve
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: rs-server
+    environment:
+      CUDA_VISIBLE_DEVICES: ""
+      MAX_BATCH_SIZE: "8"
+      MAX_WAIT_MS: "10"
+      QUEUE_DEPTH: "256"
+      REQUEST_TIMEOUT_MS: "5000"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "reward-serve"
+      HF_HOME: "/home/serve/.cache/huggingface"
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf-cache:/home/serve/.cache/huggingface
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=2).status==200 else 1)"
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 180s
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.115.1
+    container_name: rs-otel-collector
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC in
+      - "8889:8889"   # collector's own Prometheus exposition
+    depends_on:
+      - jaeger
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    container_name: rs-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # UI
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: rs-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./rules:/etc/prometheus/rules:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: rs-grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      # The renderer plugin is what makes /render/d-solo work for the committed
+      # dashboard screenshot; without it Grafana serves the UI but not PNGs.
+      GF_INSTALL_PLUGINS: "grafana-image-renderer"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - jaeger
+    restart: unless-stopped
+
+volumes:
+  hf-cache:
+  grafana-data:
