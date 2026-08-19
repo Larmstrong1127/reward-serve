@@ -255,6 +255,13 @@ class ContinuousBatcher:
             return batch
 
         # Only now spend real time waiting for the batch to grow.
+        #
+        # Windows asyncio timers fire EARLY: the loop clock resolution here is
+        # 15.625 ms, and a 5 ms wait_for returns in ~0.05 ms under load. So a
+        # timeout is NOT proof that flush_at has passed. Re-check the deadline
+        # against the loop clock and keep waiting until it has genuinely
+        # elapsed; otherwise MAX_WAIT_MS values below ~50 ms silently collapse
+        # to zero and every "wait" setting behaves identically.
         flush_at = first.enqueued_at + self.max_wait_s
         while len(batch) < self.max_batch_size:
             remaining = flush_at - loop.time()
@@ -263,7 +270,7 @@ class ContinuousBatcher:
             try:
                 batch.append(await asyncio.wait_for(self._queue.get(), remaining))
             except TimeoutError:
-                break
+                continue  # deadline re-checked at the top of the loop
         return batch
 
     async def _forward(self, batch: list[_Item]) -> None:

@@ -185,3 +185,41 @@ async def test_backlog_is_batched_not_drained_one_at_a_time() -> None:
         f"backlog was not batched: forward passes were {slow.batch_sizes}"
     )
     assert all(r.batch_size == 6 for r in results)
+
+
+async def test_max_wait_is_honoured_despite_early_timers() -> None:
+    """Windows asyncio timers fire early; short wait windows must not collapse.
+
+    On this box a 5 ms ``wait_for`` returned in ~0.05 ms in 20 of 20 trials
+    (loop clock resolution 15.625 ms). If a premature TimeoutError is treated
+    as the deadline, a max_wait_ms of 5 flushes a lone item after ~0.05 ms and
+    every small wait setting behaves identically. The batcher must instead
+    re-check the deadline and hold the item until the window has genuinely
+    elapsed. We use a small window (5 ms) because that is where the bug lives,
+    and average over trials because a single hold is quantised to the clock.
+    """
+    import time
+
+    from reward_serve.batcher import ContinuousBatcher
+
+    seen: list[float] = []
+
+    class _Scorer:
+        def score_pairs(self, pairs):  # type: ignore[no-untyped-def]
+            seen.append(time.perf_counter())
+            return [0.0 for _ in pairs]
+
+    b = ContinuousBatcher(_Scorer(), max_batch_size=8, max_wait_ms=5, queue_depth=16)
+    await b.start()
+    holds: list[float] = []
+    try:
+        for _ in range(20):
+            seen.clear()
+            t0 = time.perf_counter()
+            await b.submit("p", "r", timeout_ms=1000)
+            holds.append((seen[0] - t0) * 1000.0)
+    finally:
+        await b.stop()
+    mean_hold = sum(holds) / len(holds)
+    # Collapsed batcher: ~0.05 ms. Correct batcher: >= a few ms (clock-quantised).
+    assert mean_hold >= 2.0, f"mean hold {mean_hold:.2f} ms; the wait window collapsed"
