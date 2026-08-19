@@ -5,10 +5,15 @@ Definitions used everywhere in this repo (state them once, then never drift):
 * A record is *measured* if it was sent after the warm-up window. Warm-up
   records are excluded from every number below.
 * `success`  = HTTP 200.
-* `rejected` = HTTP 429 (server queue full). Rejections are not errors; they are
-  the server shedding load on purpose, and they are reported separately.
-* `error`    = anything else, including 503 (draining), 5xx, and transport
-  failures (recorded with status 0).
+* `rejected` = HTTP 429 (`queue_full`). Rejections are not errors; they are the
+  server shedding load on purpose, and they are reported separately.
+* `timeout`  = HTTP 504 (`deadline_exceeded`): admitted, then the deadline
+  passed before a forward pass started. Also load shedding, but shedding that
+  already cost queue capacity, so it is counted apart from 429.
+* `shed_rate` = (429 + 504) / measured -- the share of offered load the server
+  declined to serve, whichever way it declined.
+* `error`    = anything else: 503 (draining/not_ready), 422, other 5xx, and
+  transport failures (recorded with status 0).
 * Latency percentiles are computed over SUCCESSES ONLY. Mixing in a 1 ms 429
   would make an overloaded server look fast.
 * Percentiles are exact order statistics by the nearest-rank method:
@@ -55,7 +60,8 @@ def summarize_records(
     n = len(rows)
     successes = [r for r in rows if r.status == 200]
     rejected = [r for r in rows if r.status == 429]
-    errors = [r for r in rows if r.status not in (200, 429)]
+    timeouts = [r for r in rows if r.status == 504]
+    errors = [r for r in rows if r.status not in (200, 429, 504)]
 
     lat = [r.latency_ms for r in successes]
     ttfb = [r.ttfb_ms for r in successes if r.ttfb_ms is not None]
@@ -74,8 +80,11 @@ def summarize_records(
         "n_measured": n,
         "n_success": len(successes),
         "n_rejected_429": len(rejected),
+        "n_timeout_504": len(timeouts),
         "n_error": len(errors),
         "rejection_rate": round(len(rejected) / n, 6) if n else None,
+        "timeout_rate": round(len(timeouts) / n, 6) if n else None,
+        "shed_rate": round((len(rejected) + len(timeouts)) / n, 6) if n else None,
         "error_rate": round(len(errors) / n, 6) if n else None,
         "window_s": round(window_s, 4),
         "send_span_s": round(send_span_s, 4),
@@ -86,6 +95,7 @@ def summarize_records(
         "mean_forward_ms": _mean_or_none(fwd),
         "batch_size_reported": bool(batch),
         "status_counts": _status_counts(rows),
+        "error_codes": _error_codes(rows),
     }
     for q in PERCENTILES:
         out[f"latency_p{int(q)}_ms"] = round(percentile(lat, q), 4) if lat else None
@@ -101,6 +111,14 @@ def _status_counts(rows: Sequence["RequestRecord"]) -> dict[str, int]:
     for r in rows:
         key = str(r.status)
         counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _error_codes(rows: Sequence["RequestRecord"]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for r in rows:
+        if r.error_code:
+            counts[r.error_code] = counts.get(r.error_code, 0) + 1
     return dict(sorted(counts.items()))
 
 

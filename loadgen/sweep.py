@@ -180,10 +180,22 @@ async def run_cell(
             "PORT": str(port),
             "MAX_BATCH_SIZE": str(batch_size),
             "MAX_WAIT_MS": str(wait_ms),
+            "QUEUE_DEPTH": str(args.queue_depth),
             "PYTHONPATH": str(args.server_cwd),
         }
     )
+    # The contract gives every env var a matching CLI flag, and the flag wins.
+    # We set BOTH: the flags are what the server actually reads, the env vars
+    # keep simpler targets (the stub) configurable through the same code path.
     cmd = split_command(args.server_cmd)
+    if args.server_flags:
+        cmd += [
+            "--host", "127.0.0.1",
+            "--port", str(port),
+            "--max-batch-size", str(batch_size),
+            "--max-wait-ms", str(wait_ms),
+            "--queue-depth", str(args.queue_depth),
+        ]
     log_path = out_dir / "server-logs" / f"{cell_id}.log"
     started = time.time()
     record: dict[str, Any] = {
@@ -196,7 +208,8 @@ async def run_cell(
         "server_cwd": str(args.server_cwd),
         "env_overrides": {
             k: env[k] for k in
-            ("CUDA_VISIBLE_DEVICES", "PORT", "MAX_BATCH_SIZE", "MAX_WAIT_MS", "PYTHONPATH")
+            ("CUDA_VISIBLE_DEVICES", "PORT", "MAX_BATCH_SIZE", "MAX_WAIT_MS",
+             "QUEUE_DEPTH", "PYTHONPATH")
         },
         "warmup_s": args.warmup,
         "duration_s": args.duration,
@@ -251,7 +264,9 @@ async def run_sweep(args: argparse.Namespace) -> int:
             f"--batch-sizes {','.join(str(b) for b in args.batch_sizes)} "
             f"--wait-ms {','.join(str(w) for w in args.wait_ms)} "
             f"--rps {','.join(str(r) for r in args.rps)} "
-            f"--duration {args.duration} --warmup {args.warmup} --seed {args.seed}"
+            f"--duration {args.duration} --warmup {args.warmup} --seed {args.seed} "
+            f"--queue-depth {args.queue_depth}"
+            f"{'' if args.server_flags else ' --no-server-flags'}"
         ),
         "target_under_test": args.target_label,
         "grid": {
@@ -301,6 +316,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--duration", type=float, default=20.0)
     ap.add_argument("--warmup", type=float, default=5.0)
     ap.add_argument("--seed", type=int, default=1234)
+    ap.add_argument("--queue-depth", type=int, default=256)
+    ap.add_argument(
+        "--server-flags", action=argparse.BooleanOptionalAction, default=True,
+        help="append --port/--max-batch-size/--max-wait-ms/--queue-depth to the "
+             "server command (contract section 4). --no-server-flags for targets "
+             "that only read the environment.",
+    )
     ap.add_argument("--timeout", type=float, default=60.0)
     ap.add_argument("--ready-timeout", type=float, default=180.0)
     return ap.parse_args(argv)

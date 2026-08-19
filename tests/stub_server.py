@@ -3,18 +3,21 @@
 It exists so the load harness can be built, tested and dry-run before the real
 server core lands. It honours the same contract:
 
-    GET  /readyz    -> 200 "ok" once the batcher loop is running
+    GET  /readyz    -> 200 {"status":"ready",...} once the batcher loop runs
     POST /v1/score  {"prompt": str, "response": str}
-                    -> 200 {"score", "batch_size", "queue_wait_ms", "forward_ms"}
-                    -> 429 when the admission queue is full
-                    -> 503 while draining (after SIGTERM/shutdown begins)
+                    -> 200 {"results":[{"score","batch_size","queue_wait_ms",
+                            "forward_ms"}], "model", "max_length", "temperature"}
+                    -> 429 {"error":"queue_full"} when the queue is full
+                    -> 503 {"error":"draining"} while draining
 
 It implements a real queue and a real time-or-size flush policy, but the
 "forward pass" is a sleep whose cost is FORWARD_BASE_MS + FORWARD_PER_ITEM_MS *
 batch_size. Any number produced against this stub describes the STUB, never the
 model. Sweep results collected against it must say so.
 
-Env: PORT, MAX_BATCH_SIZE, MAX_WAIT_MS, MAX_QUEUE, FORWARD_BASE_MS,
+It ignores argv, so the sweep's contract CLI flags can be passed harmlessly.
+
+Env: PORT, MAX_BATCH_SIZE, MAX_WAIT_MS, QUEUE_DEPTH, FORWARD_BASE_MS,
      FORWARD_PER_ITEM_MS.
 """
 from __future__ import annotations
@@ -34,7 +37,7 @@ class Config:
     port: int = int(os.environ.get("PORT", "8000"))
     max_batch_size: int = int(os.environ.get("MAX_BATCH_SIZE", "8"))
     max_wait_ms: float = float(os.environ.get("MAX_WAIT_MS", "5"))
-    max_queue: int = int(os.environ.get("MAX_QUEUE", "256"))
+    max_queue: int = int(os.environ.get("QUEUE_DEPTH", os.environ.get("MAX_QUEUE", "256")))
     forward_base_ms: float = float(os.environ.get("FORWARD_BASE_MS", "8"))
     forward_per_item_ms: float = float(os.environ.get("FORWARD_PER_ITEM_MS", "3"))
 
@@ -113,8 +116,9 @@ class Batcher:
 
 
 def _response(status: int, body: bytes, ctype: str = "application/json") -> bytes:
-    reason = {200: "OK", 400: "Bad Request", 404: "Not Found",
-              429: "Too Many Requests", 503: "Service Unavailable"}.get(status, "OK")
+    reason = {200: "OK", 404: "Not Found", 422: "Unprocessable Entity",
+              429: "Too Many Requests", 503: "Service Unavailable",
+              504: "Gateway Timeout"}.get(status, "OK")
     head = (
         f"HTTP/1.1 {status} {reason}\r\n"
         f"Content-Type: {ctype}\r\n"
@@ -151,7 +155,12 @@ def make_handler(batcher: Batcher, cfg: Config):  # noqa: ANN201 - asyncio callb
                 method, path, body = req
                 if path == "/readyz":
                     ok = batcher.ready and not batcher.draining
-                    writer.write(_response(200 if ok else 503, b"ok" if ok else b"draining", "text/plain"))
+                    ready = json.dumps({
+                        "status": "ready" if ok else "draining",
+                        "model_loaded": batcher.ready,
+                        "batcher_running": batcher.ready,
+                    }).encode()
+                    writer.write(_response(200 if ok else 503, ready))
                 elif path == "/v1/score" and method == "POST":
                     writer.write(await _score(batcher, cfg, body))
                 else:
@@ -168,17 +177,24 @@ def make_handler(batcher: Batcher, cfg: Config):  # noqa: ANN201 - asyncio callb
 
 async def _score(batcher: Batcher, cfg: Config, body: bytes) -> bytes:
     if batcher.draining:
-        return _response(503, b'{"detail":"draining"}')
+        return _response(503, b'{"error":"draining","detail":"drain started"}')
     try:
         payload = json.loads(body)
         if not isinstance(payload, dict) or "prompt" not in payload or "response" not in payload:
             raise ValueError("prompt and response required")
     except Exception as exc:
-        return _response(400, json.dumps({"detail": str(exc)}).encode())
+        return _response(422, json.dumps({"error": "invalid", "detail": str(exc)}).encode())
     if batcher.depth() >= cfg.max_queue:
-        return _response(429, b'{"detail":"queue full"}')
+        return _response(429, b'{"error":"queue_full","detail":"queue at QUEUE_DEPTH"}')
     result = await batcher.submit(Item(enqueued_at=time.perf_counter()))
-    return _response(200, json.dumps(result).encode())
+    # mirror the real contract's envelope: results[] plus checkpoint facts
+    envelope = {
+        "results": [result],
+        "model": "stub (no model loaded)",
+        "max_length": 512,
+        "temperature": 1.0,
+    }
+    return _response(200, json.dumps(envelope).encode())
 
 
 async def amain() -> None:

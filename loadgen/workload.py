@@ -49,7 +49,14 @@ def make_sample(rng: random.Random, bucket: str) -> Sample:
 
 
 def build_corpus(seed: int, per_bucket: int = 64, buckets: tuple[str, ...] | None = None) -> list[Sample]:
-    """Deterministic corpus: same seed always yields the same list of samples."""
+    """Deterministic corpus: same seed always yields the same list of samples.
+
+    Buckets are INTERLEAVED (short, medium, long, short, ...), not concatenated.
+    The generator walks this list with `index % len(corpus)`, so a block-ordered
+    corpus would give a short run -- and every warm-up phase -- nothing but the
+    first bucket, and the length mix would depend on how many requests happened
+    to fit. Interleaving makes the mix the same at any run length.
+    """
     names = buckets if buckets is not None else tuple(BUCKETS)
     rng = random.Random(seed)
-    return [make_sample(rng, b) for b in names for _ in range(per_bucket)]
+    return [make_sample(rng, b) for _ in range(per_bucket) for b in names]

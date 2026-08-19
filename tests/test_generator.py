@@ -124,3 +124,14 @@ def test_rejections_are_recorded_not_raised(stub_server_factory: Callable[..., A
 def test_wait_ready_times_out_on_a_dead_port() -> None:
     with pytest.raises(TimeoutError):
         asyncio.run(wait_ready("http://127.0.0.1:9", timeout_s=1.0, poll_s=0.1))
+
+
+def test_corpus_interleaves_buckets_so_short_runs_see_the_full_mix() -> None:
+    corpus = build_corpus(3, per_bucket=8)
+    first_cycle = [s.bucket for s in corpus[: len(BUCKETS)]]
+    assert sorted(first_cycle) == sorted(BUCKETS), (
+        "the first requests of a run must cover every length bucket"
+    )
+    # any window one cycle long is balanced
+    window = [s.bucket for s in corpus[4 : 4 + len(BUCKETS)]]
+    assert sorted(window) == sorted(BUCKETS)

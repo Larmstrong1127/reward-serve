@@ -17,11 +17,17 @@ byte of the response off the socket.
 
 All timestamps are `time.perf_counter()` seconds, comparable within one run.
 
-Contract used (provisional until docs/contract.md lands in the server-core
-worktree): POST {base_url}/v1/score  {"prompt": str, "response": str}
-        -> {"score": float, "batch_size": int, "queue_wait_ms": float,
-            "forward_ms": float};  429 when the queue is full; 503 draining.
-Unknown/missing metadata fields degrade to None rather than failing the run.
+Contract (docs/contract.md in the server-core worktree, read 2026-08-18):
+POST {base_url}/v1/score  {"prompt": str, "response": str}   (Form A, one pair)
+  -> 200 {"results": [{"score", "batch_size", "queue_wait_ms", "forward_ms"}],
+          "model", "max_length", "temperature"}
+  -> 429 {"error": "queue_full"}        queue at QUEUE_DEPTH, returned immediately
+  -> 504 {"error": "deadline_exceeded"} deadline passed before a forward pass
+  -> 503 {"error": "draining" | "not_ready"}
+  -> 422 malformed request
+We send one pair per request, so `results` always has length 1. Missing or
+unknown metadata fields degrade to None rather than failing the run, so the
+harness keeps working against a simpler stub.
 """
 from __future__ import annotations
 
@@ -64,6 +70,9 @@ class RequestRecord:
     forward_ms: float | None = None
     score: float | None = None
     error: str | None = None
+    # server-supplied code from an error body, e.g. "queue_full",
+    # "deadline_exceeded", "draining", "not_ready" (contract section 2)
+    error_code: str | None = None
 
     @property
     def latency_ms(self) -> float:
@@ -167,10 +176,20 @@ async def _one_request(
         inflight.exit()
     done_ts = time.perf_counter()
 
+    # Contract: 200 bodies are {"results": [ {...per pair...} ], "model", ...}.
+    # We send one pair per request, so the metadata lives in results[0]. The
+    # flat form is still accepted so the harness works against a simple stub.
+    meta: dict[str, Any] = body
+    results = body.get("results")
+    if isinstance(results, list) and results and isinstance(results[0], dict):
+        meta = results[0]
+
     def _num(key: str) -> Any:
-        v = body.get(key)
+        v = meta.get(key)
         return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
+    code = body.get("error")
+    error_code = code if isinstance(code, str) else None
     bs = _num("batch_size")
     records.append(
         RequestRecord(
@@ -186,6 +205,7 @@ async def _one_request(
             forward_ms=_num("forward_ms"),
             score=_num("score"),
             error=err,
+            error_code=error_code,
         )
     )
 
