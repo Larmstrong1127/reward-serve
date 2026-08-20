@@ -1,6 +1,7 @@
 # Quantizing the reward model
 
-**Status: the memory and accuracy half is measured; the latency half is not.**
+**Status: fp32 and int8-dynamic are measured; bf16 is pending its own run and
+the latency half is not measured at all.**
 Every accuracy number below is measured on the same 1,987 pairs as this model's
 published fp32 accuracy, so the deltas are paired rather than merely nearby. No
 latency number appears anywhere in this document, because the quiet-box gate
@@ -72,7 +73,7 @@ scores, temperature included, because those are the numbers a caller would see.
 | torch | 2.13.0+cpu |
 | transformers | 5.15.0 |
 | `CUDA_VISIBLE_DEVICES` | `""` |
-| torch thread count | recorded per run in `accuracy.json` as `torch_num_threads` |
+| torch thread count | 4, fixed and recorded in `accuracy.json` as `torch_num_threads` |
 | seed | 1234, fixed |
 
 **This whole study is CPU only, deliberately.** `CUDA_VISIBLE_DEVICES` is
@@ -80,6 +81,13 @@ emptied before torch is imported, in the quant package and in every entrypoint,
 because a render workload owns the GPU on this machine. That is not a footnote:
 it bounds what the results mean. GPU int8 kernels, and every speedup that
 depends on them, are outside this study entirely.
+
+**The box was busy while this ran, and that is recorded rather than hidden.**
+`results/quantization/box_quiet.json` reports `passed: false` at 82.08% mean CPU
+over its 30-second window. This runner is not timing — a contended box cannot
+change which of two responses scores higher — so the pass proceeded and stored
+the report beside its result. No latency number is derived from it, and none
+appears below.
 
 Determinism: the model is in `eval()` with no dropout, the seed is fixed, the
 thread count is fixed and recorded, and the pairs are scored in a fixed order.
@@ -96,10 +104,15 @@ them. It refuses to write a short pass as if it were a complete one.
 
 | variant | torch API | weight size (MB) | vs fp32 |
 |---|---|---|---|
-| fp32 (shipped) | `AutoModelForSequenceClassification.from_pretrained(...)` | 703.6 | — |
-| bf16 | `model.to(torch.bfloat16)` | 351.8 | −50.0% |
-| int8-dynamic | `torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)` | 459.0 | −34.8% |
+| fp32 (shipped) | `AutoModelForSequenceClassification.from_pretrained(...)` | 703.595 | — |
+| int8-dynamic | `torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)` | 458.962 | −34.8% |
+| bf16 | `model.to(torch.bfloat16)` | pending its own run | pending |
 | int8-static | `prepare_fx` → calibrate → `convert_fx` | not available — see below | — |
+
+**bf16 is built and tested but not yet measured.** Its accuracy pass is running
+separately and it is not in `accuracy.json`, so no bf16 figure — memory, accuracy
+or ranking — appears anywhere in this document. The row is here to say the
+variant exists, not to imply a result.
 
 Sizes are the serialized `state_dict`, measured by writing it to an in-memory
 buffer rather than by summing `numel × element_size`: a dynamically quantized
@@ -119,10 +132,11 @@ remains is dominated by an embedding table no Linear-only scheme will touch.
 Anyone budgeting a 4× memory reduction from int8 on an encoder with a large
 vocabulary is budgeting for a model they do not have.
 
-bf16 halves everything uniformly precisely because it is a dtype cast rather
-than a per-module rewrite; it therefore beats int8-dynamic on memory here.
-`torch.bfloat16` matmul is verified to run on this CPU build before the variant
-is built (a test asserts it), rather than assumed from the version number.
+bf16, being a dtype cast rather than a per-module rewrite, is the one scheme
+here that does touch the embedding table — but what that is worth is a measured
+question and it has not been measured yet. `torch.bfloat16` matmul is verified
+to run on this CPU build before the variant is built (a test asserts it), rather
+than assumed from the version number.
 
 ## int8-static: attempted, and not available on this stack
 
@@ -159,9 +173,16 @@ All variants scored on the same 1,987 pairs. From `accuracy.json`:
 
 | variant | pairwise accuracy | Δ vs fp32 |
 |---|---|---|
-| fp32 | TODO-FROM-accuracy.json | — |
-| bf16 | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json |
-| int8-dynamic | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json |
+| fp32 | 0.7026 | — |
+| int8-dynamic | 0.5979 | −0.1047 |
+| bf16 | pending its own run | pending |
+
+Chance on this split is 0.5000. fp32 sits 0.2026 above chance; int8-dynamic sits
+0.0979 above it. **int8-dynamic retains 48.3% of the model's entire margin over
+chance** — put plainly, half the thing the checkpoint learned is gone. For scale,
+a collapsed learning-rate sweep on this same split scored 0.5098
+(`ours_lr5e5_collapsed_run` in the owner's `training/reward_results.json`);
+int8-dynamic is closer to fp32 than that, but it is on the same axis.
 
 The fp32 row is the anchor: it must equal the published 0.7026, because it is
 the same model on the same pairs under the same filter. A test asserts it
@@ -174,10 +195,18 @@ Accuracy is a coarse instrument here — a variant can lose accuracy on a handfu
 of pairs while quietly reshuffling hundreds. These three columns are the ones
 that describe what the server would actually emit differently:
 
-| variant | mean abs score Δ vs fp32 | Kendall tau of margins vs fp32 | flipped pairs | flips per 1,000 pairs |
-|---|---|---|---|---|
-| bf16 | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json |
-| int8-dynamic | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json | TODO-FROM-accuracy.json |
+| variant | mean abs score Δ vs fp32 | mean abs margin Δ | Kendall tau of margins vs fp32 | flipped pairs | flips per 1,000 |
+|---|---|---|---|---|---|
+| int8-dynamic | 0.993355 | 0.789166 | 0.34907 | 618 / 1987 | 311.02 |
+| bf16 | pending | pending | pending | pending | pending |
+
+These are the numbers that matter more than the accuracy row, and they are worse
+than it. A Kendall tau of 0.349 against fp32 means the quantized model orders
+pairs in a way that agrees with the shipped model only a little more often than
+it disagrees. 618 of 1,987 pairs — 311 per 1,000 — come back with the *opposite*
+preferred response. The mean absolute score shift, 0.993, is comparable in size
+to the score differences the model is being asked to resolve, which is why the
+ordering does not survive it.
 
 A flip is a pair where the variant prefers the opposite response to fp32. It
 counts flips in both directions: a flip that happens to correct an fp32 mistake
@@ -186,23 +215,66 @@ measured, not correctness.
 
 ## What this asks of the model
 
-TODO-FROM-accuracy.json — this section is written from the measured numbers once
-they land, and its shape is fixed in advance so it cannot be written to flatter
-whichever variant wins:
+**The server should stay on fp32. int8-dynamic is not adoptable on this
+checkpoint at this fidelity, and the reason is specific rather than a matter of
+taste.**
 
-- **Which variant the server could adopt**, stated as a recommendation with the
-  memory it saves and the ranking fidelity it costs, both as measured numbers.
-- **The cost in the serving system's own units**: flips per 1,000 pairs scored,
-  against the memory freed in MB. A reward server exists to rank; a flip is a
-  request answered differently than the shipped model would answer it, and that
-  is the unit a caller feels.
-- **Whether the ranking damage is concentrated in near-ties or spread across
-  confident pairs** — the first is tolerable (those pairs were coin flips
-  anyway), the second is not, and the margin deltas distinguish them.
-- **What it asks of the model, not of the server**: whether adopting the variant
-  would require anything of a future checkpoint — a quantization-aware training
-  pass, a per-channel scheme, or a smaller vocabulary — given that the embedding
-  table, not the Linear stack, is what dominates this checkpoint's memory.
+The trade, in the serving system's own units: adopting int8-dynamic frees
+**244.6 MB** of the 703.6 MB the weights occupy — 34.8% — and in exchange
+**311 of every 1,000 pairs scored come back with the opposite preference**. That
+is the exchange rate, and it is a bad one for this component. A reward model is
+not a classifier whose errors average out across a batch; it is the thing that
+decides which of two responses wins. A flip is not a slightly worse score, it is
+a request answered the other way round.
+
+The memory is also worth less here than it looks. This is one box holding one
+copy of one 184M model. 244.6 MB does not buy a second replica, and it does not
+lift any constraint the server is currently up against — the batcher's limits
+are set by forward-pass time and the queue policy, not by weight residency.
+Spending a third of the model's ranking agreement to relieve a constraint that
+is not binding is the wrong direction. If weights ever do become the binding
+constraint, this number becomes interesting again; today it is not.
+
+Two caveats stated plainly, because they cut in the honest direction:
+
+- **This is the bluntest possible int8 scheme.** `quantize_dynamic` applies
+  per-tensor int8 uniformly to all 74 Linear modules, including the attention
+  projections and the reward head, with activation ranges re-derived per batch
+  and no calibration whatsoever. The result above is evidence against *this*
+  scheme, not against int8 for this model. Per-channel weight scales, or holding
+  the head and the attention projections in higher precision, are the obvious
+  next experiments and neither was run.
+- **The flips are not decomposed.** `accuracy.json` records how many pairs
+  flipped but not what their fp32 margins were, so this study cannot say whether
+  the damage falls on near-ties the model was guessing at anyway or on pairs it
+  was confident about. Those two worlds have very different verdicts and the
+  measurement to tell them apart has not been made. Until it is, 311 per 1,000
+  should be read as an upper bound on what a caller would notice, not a
+  guarantee that all 311 mattered.
+
+### What it asks of a future checkpoint
+
+The serving-side conclusion is that this checkpoint is not shaped for
+Linear-only quantization, and the requirement lands on whoever trains the next
+one:
+
+- **The memory is in the embedding table, not the Linear stack.** All 74 Linear
+  modules were converted to int8 and the model still weighs 459 MB, because the
+  128k-row vocabulary embedding is not a Linear and was untouched. Any further
+  memory ask on this architecture is an ask for a **smaller vocabulary or a
+  quantized embedding**, not for more aggressive quantization of the layers a
+  standard recipe reaches for. A serving plan that budgets 4× from int8 on an
+  encoder with a large vocabulary is budgeting for a different model.
+- **int8 serving would have to be trained for, not bolted on.** The size of the
+  ranking damage from post-training quantization is the argument for
+  quantization-aware training if int8 inference is ever a requirement. That is a
+  requirement placed on the training run, not something the serving layer can
+  recover after the fact.
+- **The graph has to be traceable to get the good variant.** Static
+  quantization — the scheme most likely to be worth adopting — was blocked
+  purely by `torch.fx` tracing, not by any numerical result. A checkpoint whose
+  modeling code traces cleanly, or a stack that ships a model-aware tracer, is a
+  precondition for even measuring it.
 
 ## Latency: not measured
 
@@ -227,6 +299,9 @@ passes, the latency numbers will describe this box and not int8 in general.
 
 ## Threats to validity
 
+- **The headline rests on one variant.** fp32 and int8-dynamic are measured;
+  bf16 is not. The recommendation to stay on fp32 is therefore a recommendation
+  against *int8-dynamic*, not a completed survey of the alternatives.
 - **One split, one seed, one run.** Every number comes from a single pass over a
   single split of a single dataset, in-distribution for this checkpoint. No
   confidence interval is offered because none was measured; two variants
@@ -248,8 +323,16 @@ passes, the latency numbers will describe this box and not int8 in general.
 
 ## Not done
 
+- **bf16 accuracy and ranking.** The variant is built, tested, and running; it
+  is not in `accuracy.json`, so it is not in this document.
+- **The flip decomposition.** Whether the 618 flipped pairs were fp32 near-ties
+  or confident calls is the single most useful thing still missing, and it needs
+  no new forward passes — only the per-pair margins already scored. Until it is
+  measured, the verdict above is stated as an upper bound.
 - The latency sweep. The quiet-box gate has not passed.
 - int8 static quantization, and therefore the whole static row.
+- Per-channel int8, or mixed precision holding the reward head and attention
+  projections higher — the obvious follow-ups to a result this bad.
 - Quantization-aware training. This study only touches post-training methods;
   the charter's scope is serving, not training.
 - Per-channel or per-token int8 schemes, and int4 of any kind.

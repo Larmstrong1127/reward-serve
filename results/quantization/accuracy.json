@@ -1,0 +1,61 @@
+{
+  "_comment": "Pairwise accuracy and ranking drift for quantized variants of DantheMan124/deberta-preference-reward, measured on the same pairs as the published fp32 number so the deltas are paired. CPU only.",
+  "model_id": "DantheMan124/deberta-preference-reward",
+  "dataset": "HuggingFaceH4/ultrafeedback_binarized",
+  "split": "test_prefs",
+  "n_pairs_loaded": 1988,
+  "n_dropped_by_truncation_filter": 1,
+  "n_pairs_evaluated": 1987,
+  "max_length_tokens": 512,
+  "score_definition": "raw logit / reward_temperature (ranking-only)",
+  "reward_temperature": 1.166796,
+  "published_fp32_accuracy": 0.7026,
+  "published_n_pairs": 1987,
+  "device": "cpu",
+  "cuda_visible_devices": "",
+  "torch_version": "2.13.0+cpu",
+  "transformers_version": "5.15.0",
+  "python_version": "3.11.15",
+  "torch_num_threads": 4,
+  "seed": 1234,
+  "batch_size": 8,
+  "torch_api_reference": {
+    "fp32": "AutoModelForSequenceClassification.from_pretrained(...)  # no quantization",
+    "bf16": "model.to(torch.bfloat16)",
+    "int8-dynamic": "torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)",
+    "int8-static": "torch.ao.quantization.quantize_fx.prepare_fx(...) -> calibrate -> convert_fx(...)"
+  },
+  "command": "python -m reward_serve.quant.run_accuracy --variants int8-dynamic",
+  "box_quiet_passed": false,
+  "box_quiet_note": "This runner is not timing, so a contended box does not invalidate it; the report is stored beside this file as box_quiet.json for the reader to judge.",
+  "variants": {
+    "fp32": {
+      "torch_api": "AutoModelForSequenceClassification.from_pretrained(...)  # no quantization",
+      "weight_size_mb": 703.595,
+      "quantized_linear_modules": 0,
+      "plain_linear_modules": 74,
+      "pairwise_accuracy": 0.7026,
+      "mean_abs_score_delta_vs_fp32": 0.0,
+      "mean_abs_margin_delta_vs_fp32": 0.0,
+      "kendall_tau_margins_vs_fp32": 1.0,
+      "flipped_fraction_vs_fp32": 0.0,
+      "flipped_pairs_vs_fp32": 0,
+      "flips_per_1000_pairs": 0.0,
+      "accuracy_delta_vs_fp32": 0.0
+    },
+    "int8-dynamic": {
+      "torch_api": "torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)",
+      "weight_size_mb": 458.962,
+      "quantized_linear_modules": 74,
+      "plain_linear_modules": 0,
+      "pairwise_accuracy": 0.5979,
+      "mean_abs_score_delta_vs_fp32": 0.993355,
+      "mean_abs_margin_delta_vs_fp32": 0.789166,
+      "kendall_tau_margins_vs_fp32": 0.34907,
+      "flipped_fraction_vs_fp32": 0.311022,
+      "flipped_pairs_vs_fp32": 618,
+      "flips_per_1000_pairs": 311.02,
+      "accuracy_delta_vs_fp32": -0.1047
+    }
+  }
+}

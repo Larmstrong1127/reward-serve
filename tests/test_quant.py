@@ -122,7 +122,11 @@ def test_unknown_variant_is_rejected() -> None:
 # --- the anchor ---------------------------------------------------------------
 
 
-@pytest.mark.skipif(not ACCURACY_JSON.exists(), reason="accuracy.json not produced yet")
+def test_the_accuracy_artifact_is_committed() -> None:
+    """The artifact is the study. Its absence is a failure, never a skip."""
+    assert ACCURACY_JSON.exists(), "results/quantization/accuracy.json must be committed"
+
+
 def test_fp32_reproduces_the_published_accuracy_on_the_published_split() -> None:
     data = json.loads(ACCURACY_JSON.read_text(encoding="utf-8"))
     assert data["n_pairs_evaluated"] == eval_split.PUBLISHED_N_PAIRS
@@ -131,7 +135,6 @@ def test_fp32_reproduces_the_published_accuracy_on_the_published_split() -> None
     assert data["variants"]["fp32"]["pairwise_accuracy"] == eval_split.PUBLISHED_FP32_ACCURACY
 
 
-@pytest.mark.skipif(not ACCURACY_JSON.exists(), reason="accuracy.json not produced yet")
 def test_every_variant_in_the_artifact_is_measured_on_the_same_pairs() -> None:
     data = json.loads(ACCURACY_JSON.read_text(encoding="utf-8"))
     fp32 = data["variants"]["fp32"]
@@ -386,13 +389,11 @@ def test_a_partial_pass_is_never_written_as_a_complete_one(
 DOC = REPO_ROOT / "docs" / "quantization.md"
 
 
-@pytest.mark.skipif(not ACCURACY_JSON.exists(), reason="accuracy.json not produced yet")
-def test_the_doc_has_no_placeholders_left_once_the_artifact_exists() -> None:
-    """The doc is pre-structured with placeholders; the artifact landing retires them."""
+def test_the_doc_has_no_placeholders_left() -> None:
+    """The doc was pre-structured with placeholders; the artifact retired them."""
     assert "TODO-FROM-accuracy.json" not in DOC.read_text(encoding="utf-8")
 
 
-@pytest.mark.skipif(not ACCURACY_JSON.exists(), reason="accuracy.json not produced yet")
 def test_every_accuracy_quoted_in_the_doc_appears_in_the_artifact() -> None:
     """Charter rule 2: a figure in prose must be readable in a committed artifact."""
     data = json.loads(ACCURACY_JSON.read_text(encoding="utf-8"))
