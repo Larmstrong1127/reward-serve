@@ -73,37 +73,32 @@ groups:
             already spent over six hours. Ticket, not a page.
 
       # -- alerts: latency -------------------------------------------------
-      # Held back on purpose. The SLI needs a le= bucket edge, and the threshold
-      # in docs/slo.md section 2 has not been measured yet: every dry run so far
-      # was refused by the box-quiet gate. A rule written against a bucket edge
-      # nobody chose would match no series and report healthy, which is worse
-      # than having no rule. Uncomment and substitute the measured edge (one of
-      # the LATENCY_BUCKETS values in reward_serve/obs.py) once
-      # results/forward_dry_run.json exists.
-      #
-      # - alert: RewardServeLatencyFastBurn
-      #   expr: |
-      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[1h]))
-      #             / sum(rate(rs_request_latency_seconds_count[1h])))) > (14.4 * 0.01)
-      #     and
-      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[5m]))
-      #             / sum(rate(rs_request_latency_seconds_count[5m])))) > (14.4 * 0.01)
-      #   for: 2m
-      #   labels:
-      #     severity: page
-      #     slo: latency
-      #
-      # - alert: RewardServeLatencySlowBurn
-      #   expr: |
-      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[6h]))
-      #             / sum(rate(rs_request_latency_seconds_count[6h])))) > (6 * 0.01)
-      #     and
-      #     (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30m]))
-      #             / sum(rate(rs_request_latency_seconds_count[30m])))) > (6 * 0.01)
-      #   for: 15m
-      #   labels:
-      #     severity: ticket
-      #     slo: latency
+      # The SLI edge 0.750 was measured 2026-08-20: docs/slo.md section 2
+      # derives it from the slowest forward pass (282 ms) in
+      # results/obs_dry_run.json, taken on a box the quiet gate passed.
+
+      - alert: RewardServeLatencyFastBurn
+        expr: |
+          (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[1h]))
+                  / sum(rate(rs_request_latency_seconds_count[1h])))) > (14.4 * 0.01)
+          and
+          (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[5m]))
+                  / sum(rate(rs_request_latency_seconds_count[5m])))) > (14.4 * 0.01)
+        for: 2m
+        labels:
+          severity: page
+          slo: latency
+      - alert: RewardServeLatencySlowBurn
+        expr: |
+          (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[6h]))
+                  / sum(rate(rs_request_latency_seconds_count[6h])))) > (6 * 0.01)
+          and
+          (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[30m]))
+                  / sum(rate(rs_request_latency_seconds_count[30m])))) > (6 * 0.01)
+        for: 15m
+        labels:
+          severity: ticket
+          slo: latency
 
       # -- alerts: the telemetry itself ------------------------------------
       - alert: RewardServeNoMetrics

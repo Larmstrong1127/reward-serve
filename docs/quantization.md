@@ -294,26 +294,36 @@ one:
   modeling code traces cleanly, or a stack that ships a model-aware tracer, is a
   precondition for even measuring it.
 
-## Latency: not measured
+## Latency: measured 2026-08-20
 
-**No latency, throughput, or speedup number appears in this document**, and none
-is estimated. `reward_serve/quant/run_latency.py` is built and tested: it sweeps
-batch sizes {1, 4, 8, 16} at the full 512-token budget, 30 measured iterations
-after 5 warm-up iterations, exact p50/p95 order statistics, peak RSS per variant.
-It calls `scripts.box_quiet.require_quiet` before it builds a single model and
-refuses on failure, writing the refusal to
-`results/quantization/box_quiet_latency.json` and leaving no `latency.json`. A
-test asserts that refusal path, including that nothing is built after a refusal.
+The box-quiet gate passed (`results/quantization/box_quiet_latency.json`) and
+`run_latency.py` ran: batch sizes {1, 4, 8, 16} at the full 512-token budget,
+30 measured iterations after 5 warm-up, exact order statistics, **single
+thread** (`torch_num_threads: 1` — recorded in the artifact; the accuracy pass
+used 4, so these columns measure per-core arithmetic, not the served
+configuration). All numbers from
+[`latency.json`](../results/quantization/latency.json):
 
-The gate has not passed on this machine: a render workload owns the GPU and the
-CPU has not settled under the bar. So the memory-and-accuracy half of this study
-is done and the latency half is pending a quiet box. Which quantization is
-*faster* on this CPU is not known here and is not guessed.
+| batch | fp32 p50 | int8-dynamic p50 | speedup | fp32 RSS | int8 RSS |
+|---|---|---|---|---|---|
+| 1 | 1,736 ms | 1,378 ms | 1.26x | 1,351 MB | 1,441 MB |
+| 4 | 6,335 ms | 5,115 ms | 1.24x | 1,381 MB | 1,834 MB |
+| 8 | 12,956 ms | 10,850 ms | 1.19x | 1,514 MB | 1,965 MB |
+| 16 | 27,408 ms | 22,717 ms | 1.21x | 2,313 MB | 1,886 MB |
 
-One thing that can be said without measuring: this CPU is an i7-10700 (Comet
-Lake), which has AVX2 but neither AVX-512 VNNI nor AMX. int8 throughput on
-machines with those instructions is a different regime, so even once the gate
-passes, the latency numbers will describe this box and not int8 in general.
+Two readings. First, **int8-dynamic buys ~1.2x, not the 2-4x the int8
+literature reports** — this CPU (i7-10700, Comet Lake) has AVX2 but neither
+AVX-512 VNNI nor AMX, so the int8 kernels fall back to a path that saves
+memory bandwidth but not much arithmetic. On a machine with VNNI these
+columns would be a different regime; that is stated, not extrapolated.
+Second, both variants scale **super-linearly with batch size** (fp32: 1,736 ms
+at b1 vs 27,408 ms at b16 — 15.8x the time for 16x the work at one thread),
+which independently corroborates the load sweep's finding that batching does
+not pay on this CPU (`docs/knee-analysis.md`).
+
+Put against the accuracy half: int8-dynamic offers ~1.2x latency and 35%
+memory for a 10.5-point accuracy drop and 311 flipped preferences per 1,000
+pairs. The trade is even worse than the memory-only view suggested.
 
 ## Threats to validity
 

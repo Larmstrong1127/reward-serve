@@ -1,0 +1,79 @@
+{
+  "what_this_shows": "One score.request trace, the queue.wait span inside it, and the batch.forward span it links to. batch.size is how many requests shared that forward pass; the links enumerate them.",
+  "request": {
+    "name": "score.request",
+    "trace_id": "e3459ad6315ecafa4a36d04c1bb0c7be",
+    "span_id": "9764e1dfe80ce650",
+    "parent_span_id": null,
+    "start_time_unix_nano": 1787235839330615700,
+    "duration_ms": 373.487,
+    "attributes": {
+      "http.route": "/v1/score",
+      "http.status_code": 200
+    },
+    "links": [
+      {
+        "trace_id": "f88f9c9a60cdcff0dbd2dbe8cb2c9dee",
+        "span_id": "bc86fd4f507ec682",
+        "attributes": {
+          "link.kind": "batch.forward"
+        }
+      }
+    ]
+  },
+  "queue_wait": {
+    "name": "queue.wait",
+    "trace_id": "e3459ad6315ecafa4a36d04c1bb0c7be",
+    "span_id": "5e513d20fec4aac2",
+    "parent_span_id": "9764e1dfe80ce650",
+    "start_time_unix_nano": 1787235839337063500,
+    "duration_ms": 88.288,
+    "attributes": {},
+    "links": []
+  },
+  "batch_forward": {
+    "name": "batch.forward",
+    "trace_id": "f88f9c9a60cdcff0dbd2dbe8cb2c9dee",
+    "span_id": "bc86fd4f507ec682",
+    "parent_span_id": null,
+    "start_time_unix_nano": 1787235839425847500,
+    "duration_ms": 277.76,
+    "attributes": {
+      "batch.linked_requests": 4,
+      "batch.oldest_wait_ms": 77.9999999795109,
+      "batch.forward_ms": 282.00000000651926,
+      "batch.size": 4
+    },
+    "links": [
+      {
+        "trace_id": "e3459ad6315ecafa4a36d04c1bb0c7be",
+        "span_id": "9764e1dfe80ce650",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "d9997d12e0eed2518538b1990c88f561",
+        "span_id": "77ee9e2942cf6716",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "5070d8213e40c66ce1d1bd207147c879",
+        "span_id": "9a963ad7aeffca32",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      },
+      {
+        "trace_id": "03daf09a7b324bd92b0075bb5f6606f8",
+        "span_id": "3ae3d2ea8db2ca82",
+        "attributes": {
+          "link.kind": "batched_request"
+        }
+      }
+    ]
+  },
+  "siblings_in_that_batch": 4
+}

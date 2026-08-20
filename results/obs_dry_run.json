@@ -1,0 +1,57 @@
+{
+  "model_id": "DantheMan124/deberta-preference-reward",
+  "max_length": 512,
+  "temperature": 1.166796088218689,
+  "device": "cpu",
+  "n_requests": 20,
+  "settings": {
+    "max_batch_size": 8,
+    "max_wait_ms": 10.0,
+    "queue_depth": 256,
+    "request_timeout_ms": 5000.0
+  },
+  "startup_and_model_load_s": 2.173,
+  "forward_ms": {
+    "n_distinct_passes": 3,
+    "min": 218.0,
+    "median": 235.0,
+    "max": 282.0
+  },
+  "queue_wait_ms": {
+    "min": 78.0,
+    "median": 282.0,
+    "max": 484.0
+  },
+  "client_latency_ms": {
+    "min": 375.516,
+    "median": 588.997,
+    "p95": 809.861,
+    "max": 811.781
+  },
+  "achieved_batch_sizes": [
+    4,
+    8
+  ],
+  "max_achieved_batch_size": 8,
+  "n_forward_spans": 3,
+  "n_request_spans": 20,
+  "forward_spans_with_links": 3,
+  "box_quiet": {
+    "passed": true,
+    "window_s": 30,
+    "cpu_mean_pct": 11.72,
+    "gpu_mem_used_max_mib": 436,
+    "gpu_util_mean_pct": 8.63,
+    "gpu_util_max_pct": 10,
+    "hot_python_pids": {},
+    "thresholds": {
+      "cpu_max": 15.0,
+      "gpu_mem_max_mib": 2048,
+      "gpu_util_mean_max": 20.0,
+      "other_python_max": 20.0
+    },
+    "measured_at": "2026-08-20T07:23:57"
+  },
+  "command": "python scripts/obs_dry_run.py",
+  "measured_at": "2026-08-20T07:24:00"
+}

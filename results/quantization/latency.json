@@ -1,0 +1,121 @@
+{
+  "_comment": "Forward latency for quantized variants, one machine, CPU only. Gated on scripts/box_quiet.py; the gate report is box_quiet_latency.json beside this file.",
+  "model_id": "DantheMan124/deberta-preference-reward",
+  "device": "cpu",
+  "cuda_visible_devices": "",
+  "torch_version": "2.13.0+cpu",
+  "transformers_version": "5.15.0",
+  "python_version": "3.11.15",
+  "torch_num_threads": 1,
+  "batch_sizes": [
+    1,
+    4,
+    8,
+    16
+  ],
+  "command": "python -m reward_serve.quant.run_latency --variants fp32,int8-dynamic",
+  "box_quiet": {
+    "passed": true,
+    "window_s": 30,
+    "cpu_mean_pct": 12.47,
+    "gpu_mem_used_max_mib": 434,
+    "gpu_util_mean_pct": 8.79,
+    "gpu_util_max_pct": 13,
+    "hot_python_pids": {},
+    "thresholds": {
+      "cpu_max": 15.0,
+      "gpu_mem_max_mib": 2048,
+      "gpu_util_mean_max": 20.0,
+      "other_python_max": 20.0
+    },
+    "measured_at": "2026-08-20T07:28:49"
+  },
+  "variants": {
+    "fp32": {
+      "torch_api": "AutoModelForSequenceClassification.from_pretrained(...)  # no quantization",
+      "weight_size_mb": 703.595,
+      "sequence_length_tokens": 512,
+      "by_batch_size": {
+        "1": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 1736.471,
+          "p95_ms": 1774.821,
+          "mean_ms": 1728.727,
+          "min_ms": 1669.902,
+          "peak_rss_mb": 1351.06
+        },
+        "4": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 6334.576,
+          "p95_ms": 6456.509,
+          "mean_ms": 6318.745,
+          "min_ms": 6121.265,
+          "peak_rss_mb": 1380.61
+        },
+        "8": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 12955.654,
+          "p95_ms": 13330.862,
+          "mean_ms": 12995.156,
+          "min_ms": 12638.91,
+          "peak_rss_mb": 1514.25
+        },
+        "16": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 27407.839,
+          "p95_ms": 28232.259,
+          "mean_ms": 27401.756,
+          "min_ms": 26466.884,
+          "peak_rss_mb": 2312.63
+        }
+      }
+    },
+    "int8-dynamic": {
+      "torch_api": "torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)",
+      "weight_size_mb": 458.962,
+      "sequence_length_tokens": 512,
+      "by_batch_size": {
+        "1": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 1378.301,
+          "p95_ms": 1497.854,
+          "mean_ms": 1408.736,
+          "min_ms": 1349.781,
+          "peak_rss_mb": 1440.64
+        },
+        "4": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 5114.7,
+          "p95_ms": 5401.781,
+          "mean_ms": 5193.746,
+          "min_ms": 5047.067,
+          "peak_rss_mb": 1834.46
+        },
+        "8": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 10849.833,
+          "p95_ms": 11145.574,
+          "mean_ms": 10869.974,
+          "min_ms": 10575.044,
+          "peak_rss_mb": 1965.14
+        },
+        "16": {
+          "iters": 30,
+          "warmup_iters": 5,
+          "p50_ms": 22717.471,
+          "p95_ms": 23503.791,
+          "mean_ms": 22779.782,
+          "min_ms": 21958.12,
+          "peak_rss_mb": 1885.56
+        }
+      }
+    }
+  }
+}

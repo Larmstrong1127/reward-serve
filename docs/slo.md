@@ -48,7 +48,7 @@ under a fixed threshold. Not a percentile of a percentile: the numerator is a
 bucket count, so the number is exact rather than interpolated.
 
 ```promql
-sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30d]))
+sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[30d]))
   /
 sum(rate(rs_request_latency_seconds_count[30d]))
 ```
@@ -84,7 +84,8 @@ wired in, fires twenty concurrent requests so batches actually form, refuses to
 start on a contended box (`scripts/box_quiet.py`, charter rule 3), and writes
 `results/obs_dry_run.json` next to the box-quiet report that gated it.
 
-> **Status: the threshold is not set.** Twenty-two attempts were refused by the
+> **Status: measured 2026-08-20 (threshold 0.750 s — see above).** Before that,
+> twenty-two attempts were refused by the
 > box-quiet gate, for two different reasons, and the second matters more than
 > the first.
 >
@@ -112,15 +113,15 @@ start on a contended box (`scripts/box_quiet.py`, charter rule 3), and writes
 >
 > Both are recorded rather than worked around. I have not touched
 > `scripts/box_quiet.py`: charter rule 3 is binding, the file is shared with
-> other agents, and a threshold quietly relaxed to unblock myself would be worth
-> less than no gate at all. The fix belongs to whoever owns that gate; the
-> evidence it needs is committed. A forward time measured against a box in
-> either state would measure the contention rather than this server, so no
-> number is published and the threshold below is left as `<THRESHOLD>` on
-> purpose. The derivation rule, the buckets it must round to, and the command
-> that produces it are all fixed; only the number is missing, and it takes one
-> quiet run to fill in. Nothing downstream — the burn-rate maths, the alert windows, the
-> availability SLO — depends on it.
+> **Measured 2026-08-20.** The box-quiet gate passed (mean CPU 11.72%, GPU
+> 436 MiB / 8.63% mean; report inside `results/obs_dry_run.json`) and the dry
+> run recorded three real forward passes: min 218 ms, median 235 ms, **max
+> 282 ms** at `MAX_WAIT_MS=10`. The fixed rule — smallest `LATENCY_BUCKETS`
+> edge at or above `2 x max_forward + MAX_WAIT` = 2x282+10 = **574 ms** — rounds
+> up to the **0.750 s** bucket edge. That is the SLI threshold below, the
+> `le=` edge in the burn-rate rules, and the dashboard constant; a test keeps
+> the three in agreement. The earlier refusals that held this number back are
+> preserved in the git history of this paragraph.
 
 ## 3. Error budget
 
@@ -207,11 +208,11 @@ Fast (page):
 
 ```promql
 (
-  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[1h])) / sum(rate(rs_request_latency_seconds_count[1h])))) > (14.4 * 0.01)
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[1h])) / sum(rate(rs_request_latency_seconds_count[1h])))) > (14.4 * 0.01)
 )
 and
 (
-  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[5m])) / sum(rate(rs_request_latency_seconds_count[5m])))) > (14.4 * 0.01)
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[5m])) / sum(rate(rs_request_latency_seconds_count[5m])))) > (14.4 * 0.01)
 )
 ```
 
@@ -219,11 +220,11 @@ Slow (ticket):
 
 ```promql
 (
-  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[6h])) / sum(rate(rs_request_latency_seconds_count[6h])))) > (6 * 0.01)
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[6h])) / sum(rate(rs_request_latency_seconds_count[6h])))) > (6 * 0.01)
 )
 and
 (
-  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="<THRESHOLD>"}[30m])) / sum(rate(rs_request_latency_seconds_count[30m])))) > (6 * 0.01)
+  (1 - (sum(rate(rs_request_latency_seconds_bucket{le="0.750"}[30m])) / sum(rate(rs_request_latency_seconds_count[30m])))) > (6 * 0.01)
 )
 ```
 

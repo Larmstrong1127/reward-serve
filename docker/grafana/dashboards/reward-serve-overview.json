@@ -13,12 +13,12 @@
     "list": [
       {
         "name": "slo_latency_le",
-        "label": "Latency SLI bucket, seconds (PROVISIONAL, not yet measured)",
-        "description": "Placeholder. docs/slo.md section 2 derives this from the slowest forward pass in results/obs_dry_run.json, which the box-quiet gate has not yet allowed to run. Until then the latency burn panels plot a threshold nobody measured. A test fails if this label and the doc stop agreeing.",
+        "label": "Latency SLI bucket, seconds (measured 2026-08-20)",
+        "description": "docs/slo.md section 2: 2 x max forward (282 ms) + MAX_WAIT (10 ms) = 574 ms, rounded up to the 0.750 bucket edge. Measured on a gate-passed box; artifact results/obs_dry_run.json.",
         "type": "constant",
         "hide": 2,
-        "query": "0.350",
-        "current": { "text": "0.350", "value": "0.350" }
+        "query": "0.750",
+        "current": { "text": "0.750", "value": "0.750" }
       },
       {
         "name": "slo_latency_target",
