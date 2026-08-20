@@ -1,6 +1,6 @@
 # Quantizing the reward model
 
-**Status: fp32 and int8-dynamic are measured; bf16 is pending its own run and
+**Status: fp32 and int8-dynamic are measured; bf16 is attempted and abandoned: no native bf16 on this CPU, ~20x slower than fp32, killed at 200/1987 after ~10 h ([`bf16_attempt.json`](../results/quantization/bf16_attempt.json)) and
 the latency half is not measured at all.**
 Every accuracy number below is measured on the same 1,987 pairs as this model's
 published fp32 accuracy, so the deltas are paired rather than merely nearby. No
@@ -113,7 +113,7 @@ them. It refuses to write a short pass as if it were a complete one.
 |---|---|---|---|
 | fp32 (shipped) | `AutoModelForSequenceClassification.from_pretrained(...)` | 703.595 | — |
 | int8-dynamic | `torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)` | 458.962 | −34.8% |
-| bf16 | `model.to(torch.bfloat16)` | pending its own run | pending |
+| bf16 | `model.to(torch.bfloat16)` | attempted and abandoned: no native bf16 on this CPU, ~20x slower than fp32, killed at 200/1987 after ~10 h ([`bf16_attempt.json`](../results/quantization/bf16_attempt.json)) | pending |
 | int8-static | `prepare_fx` → calibrate → `convert_fx` | not available — see below | — |
 
 **bf16 is built and tested but not yet measured.** Its accuracy pass is running
@@ -182,7 +182,7 @@ All variants scored on the same 1,987 pairs. From `accuracy.json`:
 |---|---|---|
 | fp32 | 0.7026 | — |
 | int8-dynamic | 0.5979 | −0.1047 |
-| bf16 | pending its own run | pending |
+| bf16 | attempted and abandoned: no native bf16 on this CPU, ~20x slower than fp32, killed at 200/1987 after ~10 h ([`bf16_attempt.json`](../results/quantization/bf16_attempt.json)) | pending |
 
 Chance on this split is 0.5000. fp32 sits 0.2026 above chance; int8-dynamic sits
 0.0979 above it. **int8-dynamic retains 48.3% of the model's entire margin over

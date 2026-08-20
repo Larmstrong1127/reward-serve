@@ -1,0 +1,10 @@
+{
+  "what_this_is": "Record of the bf16 accuracy pass that was attempted and abandoned. Kept so the doc's 'bf16: not measured' row has an artifact explaining why, in the same spirit as int8_static_attempt.json.",
+  "command": "python -m reward_serve.quant.run_accuracy --variants fp32,int8-dynamic,bf16 --threads 4",
+  "outcome": "abandoned",
+  "progress_at_kill": "200 of 1987 pairs",
+  "wall_clock": "launched 2026-08-19 20:03, first 200-pair checkpoint 21:28 (~85 min), no further checkpoint by 06:09 the next morning; killed at ~10 h",
+  "worker_cpu_seconds_at_kill": 15677,
+  "why": "This CPU (i7-10700, Comet Lake) has AVX2 but no AVX-512/AMX and no native bf16 arithmetic, so torch emulates bf16 matmuls. The first 200 pairs ran ~20x slower than fp32 and throughput degraded further after the first checkpoint.",
+  "what_was_not_concluded": "Nothing about bf16 accuracy. The 200 scored pairs were discarded, not summarized -- a fifth of the split is not the split."
+}
