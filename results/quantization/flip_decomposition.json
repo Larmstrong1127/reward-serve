@@ -1,0 +1,22 @@
+{
+  "what_this_is": "Decomposition of the int8-dynamic preference flips by the fp32 |margin| of the flipped pair, against quartiles of the full fp32 |margin| distribution. Arithmetic over the committed raw scores only; regenerate the raw scores with run_accuracy.",
+  "n_pairs": 1987,
+  "n_flipped": 618,
+  "fp32_abs_margin_quartiles": {
+    "q1": 0.315315842628479,
+    "q2_median": 0.7158416509628296,
+    "q3": 1.327227145433426
+  },
+  "flips_by_fp32_margin_quartile": {
+    "q1_weakest": 219,
+    "q2": 163,
+    "q3": 138,
+    "q4_most_confident": 98
+  },
+  "flipped_pairs_in_top_half_of_confidence": 236,
+  "flipped_pairs_in_top_quartile_of_confidence": 98,
+  "median_abs_fp32_margin_of_flipped_pairs": 0.4650801420211792,
+  "median_abs_fp32_margin_of_kept_pairs": 0.8219565153121948,
+  "mean_abs_fp32_margin_flipped": 0.7110362491502786,
+  "mean_abs_fp32_margin_kept": 1.0244281106074293
+}

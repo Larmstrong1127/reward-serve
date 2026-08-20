@@ -215,6 +215,17 @@ preferred response. The mean absolute score shift, 0.993, is comparable in size
 to the score differences the model is being asked to resolve, which is why the
 ordering does not survive it.
 
+**Where the flips land** (`flip_decomposition.json`, arithmetic over the
+committed per-pair scores): they skew toward the pairs fp32 was least sure
+about — 219 of 618 sit in the weakest quartile of fp32 |margin| — but they do
+not stop there. 236 flips (38%) fall in the top *half* of fp32 confidence and
+98 in the top quartile. The median fp32 |margin| of a flipped pair is 0.465
+against 0.822 for kept pairs. So int8-dynamic is not merely re-rolling
+near-ties the model was guessing at; roughly one flip in six inverts a
+judgment the fp32 model made with above-median-quartile confidence. That is
+the number that rules it out for this checkpoint, not the headline accuracy
+drop.
+
 A flip is a pair where the variant prefers the opposite response to fp32. It
 counts flips in both directions: a flip that happens to correct an fp32 mistake
 still counts, because agreement with the shipped model is what is being
