@@ -89,6 +89,13 @@ change which of two responses scores higher — so the pass proceeded and stored
 the report beside its result. No latency number is derived from it, and none
 appears below.
 
+That report was written by the previous version of `scripts/box_quiet.py`,
+before its GPU rule was recalibrated on `main` to test held memory rather than a
+raw utilisation ceiling, so it carries a `gpu_max` key today's version does not
+emit. The CPU rule is identical across both versions and CPU is what failed here
+— 82.08% against a 15% ceiling — so the verdict is unchanged; a reader rerunning
+the pass today will simply get different GPU keys in the report.
+
 Determinism: the model is in `eval()` with no dropout, the seed is fixed, the
 thread count is fixed and recorded, and the pairs are scored in a fixed order.
 Chosen and rejected responses are batched separately at batch size 8, each side
