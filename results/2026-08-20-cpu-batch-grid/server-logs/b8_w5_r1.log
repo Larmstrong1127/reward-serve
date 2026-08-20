@@ -1,0 +1,33 @@
+INFO:     Started server process [56456]
+INFO:     Waiting for application startup.
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|##########| 202/202 [00:00<00:00, 8311.66it/s]
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:63296 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63311 - "GET /readyz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63315 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63329 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63329 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63333 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63314 - "POST /v1/score HTTP/1.1" 200 OK

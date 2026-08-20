@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "window_s": 30,
+  "cpu_mean_pct": 7.93,
+  "gpu_mem_used_max_mib": 423,
+  "gpu_util_mean_pct": 15.97,
+  "gpu_util_max_pct": 27,
+  "hot_python_pids": {},
+  "thresholds": {
+    "cpu_max": 15.0,
+    "gpu_mem_max_mib": 2048,
+    "gpu_util_mean_max": 20.0,
+    "other_python_max": 20.0
+  },
+  "measured_at": "2026-08-20T06:27:56"
+}

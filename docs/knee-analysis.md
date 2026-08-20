@@ -33,7 +33,54 @@ From `results/2026-08-18-cpu-batch-grid/environment.json`
 pass uses whatever thread count torch defaults to on 8 physical cores, and that
 default is what the sweep will measure. It is not pinned.
 
-## Why the numbers are missing
+## Findings (run `2026-08-20-cpu-batch-grid`, quiet box)
+
+The gate passed — mean CPU 7.93%, GPU 423 MiB — and all 72 cells ran
+(`results/2026-08-20-cpu-batch-grid/`, one freshly started server per cell,
+5 s warm-up excluded, 20 s measured, every number below is in `summary.json`).
+
+**The knee is at batch size 1. On this CPU, batching never pays.**
+
+At every offered load, `MAX_BATCH_SIZE=1` gives the highest throughput and the
+lowest p99 (all cells below at `MAX_WAIT_MS=20`):
+
+| offered | config | throughput | p50 | p99 | shed |
+|---|---|---|---|---|---|
+| 1 rps | b1 | 1.28 rps | 240 ms | 546 ms | 0% |
+| 1 rps | b32 | 1.27 rps | 434 ms | 1,111 ms | 0% |
+| 2 rps | b1 | 2.65 rps | 387 ms | 805 ms | 0% |
+| 2 rps | b32 | 2.65 rps | 498 ms | 3,020 ms | 0% |
+| 4 rps | b1 | **4.65 rps** | 858 ms | 1,899 ms | **0%** |
+| 4 rps | b2 | 3.29 rps | 4,917 ms | 5,758 ms | 13.8% |
+| 4 rps | b8 | 2.37 rps | 6,184 ms | 7,687 ms | 38.3% |
+| 4 rps | b32 | 2.12 rps | 9,489 ms | 12,777 ms | 43.6% |
+
+**Why.** Batching pays when a batch of N forwards in much less than N single
+forwards. Here it does not: mean forward time was 207 ms at mean batch 1.0 and
+7,431 ms at mean batch 18.2 — worse than linear. An 8-core CPU already
+parallelises a single 184M-parameter forward across its cores, so a bigger
+batch adds arithmetic without adding hardware, and every request in the batch
+then waits for the whole thing. Under pressure that turns into a spiral:
+longer forwards grow the queue, the backlog sweep packs bigger batches, and
+bigger batches forward slower still — at 4 rps offered, b32 sheds 43.6% of
+requests while b1 sheds none.
+
+The `MAX_WAIT_MS` axis is second-order once this dominates: at b1 it is unused
+(a batch of one never waits), and at larger caps its effect is swamped by the
+forward-time growth.
+
+**What this means for the serving plan.** Run this checkpoint on CPU with
+`MAX_BATCH_SIZE=1` — the continuous batcher is still load-bearing there (the
+queue, deadlines, cancellation, drain and backpressure all sit in it), but its
+packing feature should be off. The batching machinery earns its keep only
+where forward time is sublinear in batch size, i.e. on an accelerator with
+idle parallelism. That claim is testable the day this runs on one; it is not
+claimed here.
+
+Plots: `throughput_vs_batch.png`, `p99_vs_batch.png`, `knee.png` in the run
+directory, regenerable with `python scripts/plot_sweep.py <summary.json>`.
+
+## The earlier refusal, kept for the record
 
 Charter rule 3: a latency or throughput sweep runs only on a quiet box, and
 contended numbers are never published. The gate is `scripts/box_quiet.py`
@@ -60,7 +107,7 @@ The refusal is the artifact. `results/2026-08-18-cpu-batch-grid/` contains the
 failing report and the environment record and no `cells.jsonl` and no
 `summary.json`, which is exactly what a refused run should leave behind.
 
-## What will be measured
+## The grid, as specified before the run
 
 Grid: `MAX_BATCH_SIZE` ∈ {1, 2, 4, 8, 16, 32} × `MAX_WAIT_MS` ∈ {0, 5, 20, 50}
 × offered load ∈ {1, 2, 4} requests/s. 72 cells, each with its own freshly

@@ -1,0 +1,8 @@
+{
+  "cell": "b8_w20_r4",
+  "status": "ok",
+  "offered_rps": 4.0,
+  "mean_batch_size": 6.5606,
+  "n_success": 66,
+  "requirement": "mean_batch_size > 1.0 at MAX_BATCH_SIZE=8 under offered load"
+}

@@ -1,0 +1,64 @@
+INFO:     Started server process [58036]
+INFO:     Waiting for application startup.
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|##########| 202/202 [00:00<00:00, 7542.03it/s]
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:64562 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64577 - "GET /readyz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64590 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64590 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64592 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64602 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64581 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64602 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64580 - "POST /v1/score HTTP/1.1" 200 OK
