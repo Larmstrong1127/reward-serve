@@ -58,6 +58,7 @@ from reward_serve import obs  # noqa: E402
 
 __all__ = [
     "BreakerState",
+    "ProbeLease",
     "Health",
     "Router",
     "RouterSettings",
@@ -96,6 +97,47 @@ RETRY_RULE = "one retry, connection failures only, before any bytes were sent"
 # request byte reached the worker. Anything else -- ReadTimeout, ReadError,
 # RemoteProtocolError -- means bytes may have been sent, so it is not retried.
 PRE_SEND_ERRORS = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
+
+
+class ProbeLease:
+    """The right to hold one upstream's half-open probe slot for one attempt.
+
+    The leak this exists to make impossible: the slot was taken in ``pick`` and
+    given back on whichever later path happened to run -- a recorded result, or
+    a hand-written ``except`` clause. Any path nobody thought of (a client
+    disconnect cancelling the attempt was the one that shipped) left the flag
+    set, and a worker whose breaker can never leave HALF_OPEN is ejected for
+    good. A lease turns "remember to give it back" into "you are holding an
+    object whose ``__exit__`` gives it back", which no new code path can skip.
+
+    Releasing is idempotent and carries the epoch it was issued with, so a
+    lease that outlives its attempt cannot clear a slot that a *later* attempt
+    has since taken.
+    """
+
+    __slots__ = ("_epoch", "_released", "_upstream")
+
+    def __init__(self, upstream: Upstream, epoch: int) -> None:
+        self._upstream = upstream
+        self._epoch = epoch
+
+    @property
+    def upstream(self) -> Upstream:
+        return self._upstream
+
+    @property
+    def holds_probe_slot(self) -> bool:
+        """True only for a lease that actually took the half-open slot."""
+        return self._epoch > 0
+
+    def release(self) -> None:
+        self._upstream.release_probe_slot(self._epoch)
+
+    def __enter__(self) -> Upstream:
+        return self._upstream
+
+    def __exit__(self, *exc: object) -> None:
+        self.release()
 
 
 class Health(StrEnum):
@@ -217,6 +259,13 @@ class Upstream:
     breaker_consecutive_failures: int = 0
     breaker_opened_at: float | None = None
     breaker_probe_inflight: bool = False
+    # Monotonic id of the half-open slot currently held. Zero means "not held".
+    # It exists so a release can prove it is giving back its own slot and not
+    # one a subsequent attempt has taken.
+    probe_epoch: int = 0
+    # The lease handed out by the last successful `admit`, waiting to be picked
+    # up by the attempt it belongs to. `take_lease` is what collects it.
+    pending_lease: ProbeLease | None = field(default=None, repr=False)
 
     # -- health state machine ------------------------------------------------
     def record_probe(self, ok: bool) -> Health:
@@ -276,26 +325,67 @@ class Upstream:
             return opened is not None and self.clock() - opened >= self.breaker_open_s
         return not self.breaker_probe_inflight
 
-    def breaker_admit(self) -> bool:
-        """Take the slot for one request. Mutates; call only on the pick.
+    def admit(self) -> ProbeLease | None:
+        """Take the slot for one request, or refuse. Mutates; call on the pick.
 
         OPEN becomes HALF_OPEN once ``breaker_open_s`` has passed, and HALF_OPEN
         admits exactly one request -- the probe. A second concurrent request
         while that probe is in flight is refused, because the point of the
         half-open state is to risk one request, not to reopen the floodgates
         before the answer comes back.
+
+        Returns the lease that owns the slot, or ``None`` when the breaker
+        refuses. A CLOSED breaker holds no slot, so its lease releases nothing;
+        the caller does not have to know which case it got.
         """
         if self.breaker is BreakerState.CLOSED:
-            return True
+            return self._issue_lease(epoch=0)
         if self.breaker is BreakerState.OPEN:
             if not self.breaker_ready():
-                return False
+                return None
             self.breaker = BreakerState.HALF_OPEN
             self.breaker_probe_inflight = False
         if self.breaker_probe_inflight:
-            return False
+            return None
+        self.probe_epoch += 1
         self.breaker_probe_inflight = True
-        return True
+        return self._issue_lease(epoch=self.probe_epoch)
+
+    def _issue_lease(self, *, epoch: int) -> ProbeLease:
+        lease = ProbeLease(self, epoch)
+        self.pending_lease = lease
+        return lease
+
+    def take_lease(self) -> ProbeLease:
+        """Collect the lease ``admit`` left here, or a lease that owns nothing.
+
+        An attempt that was handed an upstream rather than a lease still ends
+        up holding the lease for that pick, so its ``finally`` releases the
+        right slot. When no slot was taken this is a no-op object, never None,
+        because a caller that has to check for None is a caller that can forget.
+        """
+        lease, self.pending_lease = self.pending_lease, None
+        return lease if lease is not None else ProbeLease(self, 0)
+
+    def release_probe_slot(self, epoch: int) -> None:
+        """Give back slot ``epoch``. Idempotent, and a no-op for a stale epoch."""
+        if epoch <= 0 or epoch != self.probe_epoch:
+            return
+        self._clear_probe_slot()
+
+    def _clear_probe_slot(self) -> None:
+        """The one place the slot is given back. Leaving a state clears it too."""
+        self.probe_epoch = 0
+        self.breaker_probe_inflight = False
+
+    def breaker_admit(self) -> bool:
+        """Boolean form of ``admit`` for driving the state machine directly.
+
+        The lease is left pending on the upstream, so the slot stays held until
+        an attempt collects and releases it -- which is exactly what the
+        half-open tests assert. Routing calls ``admit`` and holds the lease.
+        """
+        return self.admit() is not None
 
     def record_request_result(self, *, failure: bool) -> None:
         """One completed attempt. ``failure`` excludes 429 on purpose.
@@ -315,13 +405,13 @@ class Upstream:
             if reopen or self.breaker_consecutive_failures >= self.breaker_failures:
                 self.breaker = BreakerState.OPEN
                 self.breaker_opened_at = self.clock()
-                self.breaker_probe_inflight = False
+                self._clear_probe_slot()
         else:
             self.breaker_consecutive_failures = 0
             if self.breaker is BreakerState.HALF_OPEN:
                 self.breaker = BreakerState.CLOSED
                 self.breaker_opened_at = None
-                self.breaker_probe_inflight = False
+                self._clear_probe_slot()
 
     @property
     def eligible(self) -> bool:
@@ -453,6 +543,17 @@ class Router:
         The tie-break is by name rather than random so that a quiet tier is
         deterministic and a test can assert which worker was chosen.
         """
+        lease = self.pick_lease(exclude=exclude)
+        return lease.upstream if lease is not None else None
+
+    def pick_lease(self, exclude: str | None = None) -> ProbeLease | None:
+        """``pick``, but handing back the lease that owns the probe slot.
+
+        This is the form ``forward`` uses, because a lease is a thing you can
+        put in a ``with`` block; an upstream is not. ``pick`` leaves the lease
+        pending on the upstream instead, and ``attempt`` collects it, so the
+        slot is still released exactly once whichever of the two a caller uses.
+        """
         candidates = [
             up for up in self.upstreams if up.eligible and up.name != exclude
         ]
@@ -460,8 +561,9 @@ class Router:
             chosen = min(candidates, key=lambda u: (u.outstanding, u.name))
             # Only the chosen worker spends a half-open probe slot. Asking every
             # candidate would burn the slot of a worker we then did not use.
-            if chosen.breaker_admit():
-                return chosen
+            lease = chosen.admit()
+            if lease is not None:
+                return lease
             candidates.remove(chosen)
         return None
 
@@ -500,6 +602,9 @@ class Router:
             raise RuntimeError("router not started")
         budget = self.settings.request_timeout_ms / 1000.0
         started = self.clock()
+        # Whatever probe slot the pick took for this attempt is now this
+        # attempt's to give back, in the `finally` below.
+        lease = up.take_lease()
         up.outstanding += 1
         try:
             return await asyncio.wait_for(
@@ -517,17 +622,14 @@ class Router:
                 timed_out=True,
                 error="router timeout",
             )
-        except asyncio.CancelledError:
-            # A client disconnect mid-attempt records no result, so nothing
-            # downstream would ever release a HALF_OPEN probe slot this attempt
-            # was holding -- leaving the breaker stuck and the worker ejected
-            # for good. Release it here and let the cancellation propagate.
-            # Clearing the flag when this attempt was not the probe is harmless:
-            # at worst the breaker sends one extra half-open probe.
-            up.breaker_probe_inflight = False
-            raise
         finally:
             up.outstanding -= 1
+            # Every exit from this attempt passes here: a result, a timeout, a
+            # transport error, or a client disconnect cancelling the task. That
+            # is the whole guarantee -- the half-open slot is given back by the
+            # shape of the code, not by a handler someone remembered to write
+            # for the failure mode they happened to think of.
+            lease.release()
 
     async def _send(
         self,
@@ -585,18 +687,23 @@ class Router:
 
     async def forward(self, payload: bytes, headers: dict[str, str]) -> Response:
         """Pick, try, maybe retry once, and turn the outcome into a response."""
-        first = self.pick()
+        first = self.pick_lease()
         if first is None:
             return self._no_upstream()
-        attempt = await self.attempt(first, payload, headers)
-        retried = False
+        # `with` on the lease, not a bare call to `attempt`: if a later edit
+        # ever returns between the pick and the attempt, the slot still goes
+        # back. `attempt` releasing the same lease first makes this a no-op.
+        with first as first_up:
+            attempt = await self.attempt(first_up, payload, headers)
+            retried = False
 
-        if attempt.pre_send_failure:
-            second = self.pick(exclude=first.name)
-            if second is not None:
-                self.metrics.retries_total.inc()
-                retried = True
-                attempt = await self.attempt(second, payload, headers)
+            if attempt.pre_send_failure:
+                second = self.pick_lease(exclude=first_up.name)
+                if second is not None:
+                    with second as second_up:
+                        self.metrics.retries_total.inc()
+                        retried = True
+                        attempt = await self.attempt(second_up, payload, headers)
 
         return self._respond(attempt, retried)
 
