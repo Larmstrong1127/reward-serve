@@ -45,6 +45,17 @@ The gate passed — mean CPU 7.93%, GPU 423 MiB — and all 72 cells ran
 (`results/2026-08-20-cpu-batch-grid/`, one freshly started server per cell,
 5 s warm-up excluded, 20 s measured, every number below is in `summary.json`).
 
+> **Read the p99 column with this in mind.** Percentiles here are exact
+> nearest-rank, which returns the largest observation whenever `n < 101`. This
+> run measured 24–94 successful requests per cell, so **in all 72 cells the
+> reported p99 is the single slowest request** (`latency_p99_ms ==
+> latency_max_ms`, checkable in `summary.json`). The ordering below is robust —
+> batch 1 wins in all 12 rps×wait groups, and the throughput and shed columns
+> are unaffected — but no two adjacent p99 values here can be told apart, and
+> none has a confidence interval. A re-run with longer windows and repeats is
+> specified below; until it lands, treat every p99 as one observation, not an
+> estimated tail.
+
 **The knee is at batch size 1. On this CPU, batching never pays.**
 
 At every offered load, `MAX_BATCH_SIZE=1` gives the highest throughput and the
