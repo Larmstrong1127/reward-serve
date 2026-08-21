@@ -9,8 +9,10 @@ latency number.
 
 from __future__ import annotations
 
+import itertools
 import socket
 import sys
+import time
 from pathlib import Path
 
 import httpx
@@ -31,17 +33,45 @@ def _free(port: int) -> bool:
     return True
 
 
-def _free_block(size: int, start: int = 8300, stop: int = 8900) -> int:
+# Where the next block search starts. Advanced past every block we hand out so
+# two consecutive tests never race for the same ports: `_free` binds and then
+# closes, so "free" is only true at the instant it is checked, and a tier whose
+# `down()` has returned may still be releasing its sockets.
+_next_base = itertools.count(8300)
+
+
+def _free_block(size: int, stop: int = 8900) -> int:
     """First base port with `size` consecutive free ports after it.
 
     Workers take base, base+1, ... so a block is what the tier needs. Probing a
     block rather than asking the OS for ephemeral ports keeps the ports
     contiguous, which is what `Tier` assumes.
     """
-    for base in range(start, stop):
+    for base in _next_base:
+        if base + size >= stop:
+            raise RuntimeError("no free port block for the tier")
         if all(_free(base + i) for i in range(size)):
+            # Never hand this block out again in this session.
+            for _ in range(size):
+                next(_next_base)
             return base
     raise RuntimeError("no free port block for the tier")
+
+
+def _wait_ports_free(base: int, size: int, timeout_s: float = 10.0) -> None:
+    """Block until the OS has actually given the ports back.
+
+    `Tier.down()` returns once it has asked its processes to stop; the sockets
+    can outlive that. Without this wait a later test binds into ports the
+    previous tier still holds, and its requests reach the draining worker --
+    which surfaces as a 503 `{"error":"draining"}` from a tier the test never
+    started.
+    """
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        if all(_free(base + i) for i in range(size)):
+            return
+        time.sleep(0.05)
 
 
 @pytest.fixture
@@ -58,6 +88,7 @@ def tier():
         yield t
     finally:
         t.down(drain_wait_s=0.5)
+        _wait_ports_free(base, 3)
 
 
 def test_tier_comes_up_with_two_workers_both_up(tier):
