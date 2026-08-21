@@ -51,10 +51,58 @@ def test_sweep_refuses_to_run_when_box_quiet_fails(
     assert json.loads((tmp_path / "gated" / "box_quiet.json").read_text())["passed"] is False
 
 
-def test_sweep_has_no_flag_to_skip_the_box_quiet_gate() -> None:
+def test_sweep_has_no_unconditional_flag_to_skip_the_box_quiet_gate() -> None:
+    """The gate has exactly one bypass and it cannot produce a publishable file.
+
+    `--no-box-quiet` exists so a smoke run can exercise the code path on a box
+    that is known to be busy. It is accepted ONLY with `--smoke`, which stamps
+    the output `not_a_measurement`. Any bypass that is not welded to that stamp
+    would let a contended run publish, which is what charter rule 3 forbids.
+    """
     src = (REPO_ROOT / "loadgen" / "sweep.py").read_text(encoding="utf-8")
-    for forbidden in ("--skip-box-quiet", "--no-box-quiet", "--force"):
+    for forbidden in ("--skip-box-quiet", "--force"):
         assert forbidden not in src, f"{forbidden} would let a contended run publish"
+    assert "--no-box-quiet is only accepted together with --smoke" in src
+
+
+def test_no_box_quiet_without_smoke_is_refused() -> None:
+    with pytest.raises(SystemExit) as exc:
+        sweep_mod.parse_args(["--run-id", "sneaky", "--no-box-quiet"])
+    assert "--smoke" in str(exc.value)
+
+
+def test_no_box_quiet_with_smoke_is_accepted_and_stamps_the_run() -> None:
+    args = sweep_mod.parse_args(["--run-id", "smoky", "--no-box-quiet", "--smoke"])
+    assert args.smoke is True
+    assert args.box_quiet is False
+
+
+def test_smoke_run_skips_the_gate_and_stamps_not_a_measurement(tmp_path: Path) -> None:
+    """A smoke run must be impossible to mistake for a result."""
+    rc = sweep_mod.main([
+        "--run-id", "smoke", "--results-dir", str(tmp_path),
+        "--server-cmd", STUB_CMD, "--server-cwd", str(REPO_ROOT),
+        "--target-label", "stub_server (no model)",
+        "--batch-sizes", "1", "--wait-ms", "5", "--rps", "30",
+        "--duration", "1.0", "--warmup", "0.5", "--repeats", "1",
+        "--smoke", "--no-box-quiet",
+    ])
+    assert rc == 0
+    out = tmp_path / "smoke"
+    summary = json.loads((out / "summary.json").read_text())
+    assert summary["smoke"] is True and summary["not_a_measurement"] is True
+    assert summary["box_quiet"]["gate_skipped"] is True
+    assert summary["box_quiet"]["passed"] is None
+    for cell in summary["cells"]:
+        assert cell["smoke"] is True and cell["not_a_measurement"] is True
+    quiet = json.loads((out / "box_quiet.json").read_text())
+    assert quiet["not_a_measurement"] is True
+
+
+def test_a_normal_run_is_not_stamped_smoke(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sweep_mod, "require_quiet", lambda path=None: {"passed": True})
+    args = sweep_mod.parse_args(["--run-id", "real", "--results-dir", str(tmp_path)])
+    assert args.smoke is False and args.box_quiet is True
 
 
 def test_sweep_runs_a_tiny_grid_and_writes_reproducible_artifacts(
@@ -71,7 +119,7 @@ def test_sweep_runs_a_tiny_grid_and_writes_reproducible_artifacts(
         "--server-cmd", STUB_CMD, "--server-cwd", str(REPO_ROOT),
         "--target-label", "stub_server (no model)",
         "--batch-sizes", "1,4", "--wait-ms", "5", "--rps", "30",
-        "--duration", "1.5", "--warmup", "0.5",
+        "--duration", "1.5", "--warmup", "0.5", "--repeats", "1",
     ])
     assert rc == 0
     out = tmp_path / "tiny"
@@ -83,13 +131,21 @@ def test_sweep_runs_a_tiny_grid_and_writes_reproducible_artifacts(
     assert "python -m loadgen.sweep --run-id tiny" in summary["reproduce_command"]
     assert summary["environment"]["cuda_visible_devices"] == ""
     assert summary["load"]["repeats_per_cell"] == 1
+    assert summary["smoke"] is False and summary["not_a_measurement"] is False
     for cell in summary["cells"]:
         assert cell["status"] == "ok"
-        assert cell["env_overrides"]["MAX_BATCH_SIZE"] in ("1", "4")
-        assert cell["env_overrides"]["CUDA_VISIBLE_DEVICES"] == ""
+        assert len(cell["per_repeat"]) == 1
+        rep = cell["per_repeat"][0]
+        assert rep["env_overrides"]["MAX_BATCH_SIZE"] in ("1", "4")
+        assert rep["env_overrides"]["CUDA_VISIBLE_DEVICES"] == ""
+        assert rep["command"], "the exact command must be recorded"
+        assert rep["stats"]["n_warmup_excluded"] > 0
         assert cell["stats"]["n_measured"] > 0
-        assert cell["stats"]["n_warmup_excluded"] > 0
-        assert cell["command"], "the exact command must be recorded"
+        # --repeats 1 still produces an interval; it is just a wide one.
+        assert cell["stats"]["repeats"] == 1
+        assert cell["stats"]["latency_p99_ci_ms"] is not None
+        raw = tmp_path / "tiny" / "raw" / f"{cell['cell_id']}.jsonl"
+        assert raw.exists(), "every cell must leave its per-request rows on disk"
 
 
 def test_free_port_returns_a_usable_port() -> None:
