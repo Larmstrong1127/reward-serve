@@ -24,9 +24,11 @@ below is scoped to what has actually been run.
 | A worker made 2 s slow stays `UP` in every health sample — the routing rule, not the health check, moves 100% of load off it | [`results/faults/latency-2s-on-one-worker/summary.json`](results/faults/latency-2s-on-one-worker/summary.json) |
 | 1297 rejections (95.2% of offered load) open no circuit breaker and move no worker out of `UP` | [`results/faults/queue-exhaustion/summary.json`](results/faults/queue-exhaustion/summary.json) |
 | A wedged worker is never marked down — `/readyz` still answers 200 — but nothing waits past the router's 3 s budget: max observed 3023.9 ms | [`results/faults/hang-worker/summary.json`](results/faults/hang-worker/summary.json) |
-| 142 tests, `ruff`, `mypy --strict`, and the vocabulary gate pass | `pytest -q && ruff check . && mypy --strict reward_serve loadgen && python scripts/vocab_gate.py .` |
+| The knee: 72-cell sweep on a gated quiet box — batch size 1 wins everywhere | [`results/2026-08-20-cpu-batch-grid/summary.json`](results/2026-08-20-cpu-batch-grid/summary.json) with `box_quiet.json` beside it |
+| int8-dynamic: 0.7026 → 0.5979, 311 flips per 1,000 pairs, ~1.2x speedup — ruled out | [`results/quantization/accuracy.json`](results/quantization/accuracy.json), [`latency.json`](results/quantization/latency.json), [`flip_decomposition.json`](results/quantization/flip_decomposition.json) |
+| 172 tests, `ruff`, `mypy --strict`, and the vocabulary gate pass | `pytest -q && ruff check . && mypy --strict reward_serve loadgen && python scripts/vocab_gate.py .` |
 
-## What has not been run — and why it is not in the table
+## What was measured late, and the refusals that preceded it
 
 **The measurements landed on 2026-08-20, on a box the gate finally passed**
 (mean CPU 7.93%, GPU 423 MiB — the report sits beside every result it gated).
