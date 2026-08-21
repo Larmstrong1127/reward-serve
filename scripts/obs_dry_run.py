@@ -17,8 +17,8 @@ contents are identical either way; only the transport differs.
 
 Run:
 
-    cd D:\\ClaudeProjects\\reward-serve-wt-observability
-    D:\\ClaudeProjects\\reward-serve\\.venv\\Scripts\\python.exe scripts/obs_dry_run.py
+    cd <repo root>
+    .venv\Scripts\python.exe scripts/obs_dry_run.py
 """
 
 from __future__ import annotations
