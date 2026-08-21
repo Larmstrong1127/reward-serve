@@ -116,10 +116,7 @@ them. It refuses to write a short pass as if it were a complete one.
 | bf16 | `model.to(torch.bfloat16)` | attempted and abandoned: no native bf16 on this CPU, ~20x slower than fp32, killed at 200/1987 after ~10 h ([`bf16_attempt.json`](../results/quantization/bf16_attempt.json)) | pending |
 | int8-static | `prepare_fx` → calibrate → `convert_fx` | not available — see below | — |
 
-**bf16 is built and tested but not yet measured.** Its accuracy pass is running
-separately and it is not in `accuracy.json`, so no bf16 figure — memory, accuracy
-or ranking — appears anywhere in this document. The row is here to say the
-variant exists, not to imply a result.
+**bf16 was attempted and abandoned** — no native bf16 on this CPU, ~20x slower than fp32, killed at 200/1987 after ~10 h ([`bf16_attempt.json`](../results/quantization/bf16_attempt.json)). The 200 scored pairs were discarded, not summarized.
 
 Sizes are the serialized `state_dict`, measured by writing it to an in-memory
 buffer rather than by summing `numel × element_size`: a dynamically quantized

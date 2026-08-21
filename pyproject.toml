@@ -21,6 +21,7 @@ dependencies = [
     "prometheus-client>=0.21",
     "numpy>=1.26",
     "matplotlib>=3.9",
+    "datasets>=3.0",
 ]
 
 [project.optional-dependencies]
@@ -47,7 +48,7 @@ ignore = ["ANN401"]
 "tests/*" = ["ANN"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 strict = true
 warn_unused_ignores = false
 

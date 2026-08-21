@@ -120,6 +120,10 @@ class ContinuousBatcher:
         self.max_wait_s = max_wait_ms / 1000.0
         self.queue_depth = queue_depth
         self.request_timeout_s = request_timeout_ms / 1000.0
+        # Drain grace must exceed the slowest plausible forward, or stop()
+        # abandons in-flight work: the sweep measured 7.4 s forwards at large
+        # batches on this CPU, so the old hardcoded 5 s was a real gap.
+        self.stop_grace_s = max(30.0, self.request_timeout_s * 2)
         self.hooks = hooks or BatcherHooks()
 
         self._queue: asyncio.Queue[_Item] = asyncio.Queue(maxsize=queue_depth)
@@ -168,7 +172,7 @@ class ContinuousBatcher:
         self._task = None
         if task is not None:
             try:
-                await asyncio.wait_for(asyncio.shield(task), timeout=5.0)
+                await asyncio.wait_for(asyncio.shield(task), timeout=self.stop_grace_s)
             except (TimeoutError, asyncio.CancelledError):
                 task.cancel()
         while not self._queue.empty():

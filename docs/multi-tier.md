@@ -290,7 +290,7 @@ clients for 16 s. The fault is the offered load.
 (95.16%), 42 were 200 and 24 were 504.
 
 **What the state table did: nothing.** Both workers were UP in every one of the
-133 samples, and **both breakers were CLOSED in every sample**. 1297 rejections
+157 samples, and **both breakers were CLOSED in every sample**. 1297 rejections
 opened no breaker and moved no state. That is the decision holding: a 429 never
 increments a worker's failure counter, because a worker refusing work it cannot
 queue is a healthy worker doing its job. Ejecting it would have moved the whole

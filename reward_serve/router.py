@@ -517,6 +517,15 @@ class Router:
                 timed_out=True,
                 error="router timeout",
             )
+        except asyncio.CancelledError:
+            # A client disconnect mid-attempt records no result, so nothing
+            # downstream would ever release a HALF_OPEN probe slot this attempt
+            # was holding -- leaving the breaker stuck and the worker ejected
+            # for good. Release it here and let the cancellation propagate.
+            # Clearing the flag when this attempt was not the probe is harmless:
+            # at worst the breaker sends one extra half-open probe.
+            up.breaker_probe_inflight = False
+            raise
         finally:
             up.outstanding -= 1
 

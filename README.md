@@ -15,13 +15,13 @@ below is scoped to what has actually been run.
 | Claim | Proof |
 | --- | --- |
 | The batcher batches. 20 concurrent requests → 3 forward passes of 8, 8, 4 | `python scripts/obs_dry_run.py --structure-only` → [`results/obs_dry_run_structure.json`](results/obs_dry_run_structure.json) |
-| Scores are identical alone and inside a batch of 8 (≤ 1e-4) | `pytest tests/test_model.py -k parity` |
+| Scores are identical alone and inside a batch of 8 (≤ 1e-4) | `pytest tests/test_model.py -k identical_alone` |
 | A request cancelled in the queue is never forwarded; a request past its deadline is never scored | `pytest tests/test_batcher.py -k "deadline or cancelled"` |
 | A full queue answers 429 immediately; a drain loses no in-flight request | `pytest tests/test_server.py -k "429 or drain"` |
 | One request's trace names the batch it rode in and every sibling in it | [`results/trace_batch_link_structure.json`](results/trace_batch_link_structure.json) — `batch.forward` carries `batch.size=8` and 8 span links |
 | A router and two worker processes come up, split ten requests 5/5, and one trace id spans router → worker → batch | `python scripts/tier_dry_run.py` → [`results/multi-tier-dry-run/dry_run.json`](results/multi-tier-dry-run/dry_run.json) |
 | Killing a worker mid-batch loses only the 2 requests already on its wire; the other 187 sent afterwards all succeed, and traffic converges on the survivor in 93 ms | [`results/faults/kill-worker-mid-batch/summary.json`](results/faults/kill-worker-mid-batch/summary.json) |
-| A worker made 2 s slow stays `UP` in every health sample — the routing rule, not the health check, moves 100% of load off it | [`results/faults/latency-2s-on-one-worker/summary.json`](results/faults/latency-2s-on-one-worker/summary.json) |
+| A worker made 2 s slow stays `UP` in every health sample — the routing rule, not the health check, shifts load off it, peaking at 100% on A in three sample windows (with 6 router 504s during the fault) | [`results/faults/latency-2s-on-one-worker/summary.json`](results/faults/latency-2s-on-one-worker/summary.json) |
 | 1297 rejections (95.2% of offered load) open no circuit breaker and move no worker out of `UP` | [`results/faults/queue-exhaustion/summary.json`](results/faults/queue-exhaustion/summary.json) |
 | A wedged worker is never marked down — `/readyz` still answers 200 — but nothing waits past the router's 3 s budget: max observed 3023.9 ms | [`results/faults/hang-worker/summary.json`](results/faults/hang-worker/summary.json) |
 | The knee: 72-cell sweep on a gated quiet box — batch size 1 wins everywhere | [`results/2026-08-20-cpu-batch-grid/summary.json`](results/2026-08-20-cpu-batch-grid/summary.json) with `box_quiet.json` beside it |
@@ -121,7 +121,7 @@ Two tiers — one router in front of two worker processes on the same machine:
 
 ## Not done
 
-A quantization study is planned and not started. Cancellation after batch
+The quantization study is done — accuracy, flip decomposition, and latency all measured (`docs/quantization.md`). Cancellation after batch
 assembly begins still scores the item and discards the result. There is no
 request priority and no length bucketing.
 

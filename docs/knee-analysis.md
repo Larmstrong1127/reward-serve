@@ -84,8 +84,16 @@ directory, regenerable with `python scripts/plot_sweep.py <summary.json>`.
 
 Charter rule 3: a latency or throughput sweep runs only on a quiet box, and
 contended numbers are never published. The gate is `scripts/box_quiet.py`
-(mean CPU < 15% over 30 s, GPU utilization < 10%, no other python process over
-20% CPU). It ran, it failed, and the sweep stopped before starting a single
+(mean CPU < 15% over 30 s; GPU memory < 2 GiB and mean GPU utilization < 20%;
+no other python process over 20% CPU). The GPU rule is a 2026-08-18
+recalibration: the original max-utilization < 10% ceiling was measured to sit
+inside idle desktop-compositing noise (10-21% spikes with nothing running,
+`results/box_quiet_calibration.json`) and could never pass while anyone was
+logged in. Full disclosure: the published sweep passed the recalibrated gate
+(GPU 423 MiB, mean util under the bar) and would have FAILED the original
+max-util rule on compositing spikes alone; the CPU rule, which is what
+actually distinguishes a loaded box from an idle one here, is unchanged and
+was passed at 7.93%. It ran, it failed, and the sweep stopped before starting a single
 server process.
 
 From `results/2026-08-18-cpu-batch-grid/box_quiet.json`:

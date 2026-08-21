@@ -450,3 +450,56 @@ async def _eventually(predicate, timeout: float = 2.0) -> bool:
 @pytest.fixture(autouse=True)
 def _no_gpu(monkeypatch):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
+
+
+async def test_cancelled_half_open_probe_releases_the_slot() -> None:
+    """A client disconnect during the half-open probe must not eject the worker.
+
+    The probe slot is normally released when the attempt records a result. A
+    cancelled attempt records nothing, so before the fix the slot leaked and
+    `pick` refused the worker forever -- a healthy upstream permanently out of
+    rotation because one client hung up at the wrong moment.
+    """
+    import asyncio
+
+    from reward_serve.obs import setup_router_metrics
+    from reward_serve.router import BreakerState, Router, RouterSettings
+
+    clock = FakeClock()
+    settings = RouterSettings(
+        worker_urls=("http://127.0.0.1:9",),
+        breaker_failures=1,
+        breaker_open_s=1.0,
+        success_threshold=1,
+        request_timeout_ms=5000,
+    )
+    rt = Router(settings, metrics=setup_router_metrics(), clock=clock)
+    up = rt.upstreams[0]
+    up.record_probe(True)
+
+    # Trip the breaker, wait out the open window, and take the half-open slot.
+    up.record_request_result(failure=True)
+    assert up.breaker is BreakerState.OPEN
+    clock.advance(1.5)
+    assert rt.pick() is up  # this acquires the probe slot
+    assert up.breaker_probe_inflight
+
+    # The probe attempt is cancelled mid-flight (client disconnect). The
+    # request itself would fail on a connect error long before this matters,
+    # so drive `attempt` with a payload against the unroutable address and
+    # cancel it before it resolves.
+    rt._client = __import__("httpx").AsyncClient()
+    task = asyncio.ensure_future(rt.attempt(up, b"{}", {}))
+    await asyncio.sleep(0)
+    task.cancel()
+    try:
+        await task
+    except (asyncio.CancelledError, Exception):
+        pass
+    finally:
+        await rt._client.aclose()
+        rt._client = None
+
+    assert not up.breaker_probe_inflight, (
+        "cancelled probe attempt leaked the half-open slot; worker is ejected forever"
+    )

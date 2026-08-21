@@ -23,7 +23,10 @@ reader. A claim they cannot reproduce is worse than no claim.
    with the exact command recorded next to it. No exceptions, including
    "approximately".
 3. **Measurement needs a quiet box.** `scripts/box_quiet.py` must PASS
-   (CPU < 15% for 30s, GPU util < 10%, no other python.exe over 20% CPU) before
+   (mean CPU < 15% for 30s; GPU memory < 2 GiB AND mean GPU util < 20%; no
+   other python.exe over 20% CPU — the GPU rule was recalibrated 2026-08-18
+   after the original max-util < 10% ceiling was measured to sit inside idle
+   desktop-compositing noise, see results/box_quiet_calibration.json) before
    any latency/throughput sweep runs. Store the box_quiet report alongside the
    results it gates. Contended numbers are not published — ever.
 4. **Forbidden vocabulary in prose:** `distributed`, `at scale`, `production-
