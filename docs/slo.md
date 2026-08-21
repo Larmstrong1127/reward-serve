@@ -76,8 +76,8 @@ budget.
 
 The measurement command is:
 
-    cd D:\ClaudeProjects\reward-serve-wt-observability
-    D:\ClaudeProjects\reward-serve\.venv\Scripts\python.exe scripts/obs_dry_run.py
+    cd <repo root>
+    .venv\Scripts\python.exe scripts/obs_dry_run.py
 
 It runs the real server, the real batcher and the real checkpoint with obs
 wired in, fires twenty concurrent requests so batches actually form, refuses to

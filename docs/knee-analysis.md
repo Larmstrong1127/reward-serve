@@ -208,10 +208,10 @@ Run when the box is quiet — the sweep re-checks the gate itself and will refus
 again if it is not:
 
 ```
-cd D:\ClaudeProjects\reward-serve
+cd <repo root>
 .venv\Scripts\python.exe -m loadgen.sweep \
   --run-id 2026-08-18-cpu-batch-grid \
-  --server-cmd "D:\ClaudeProjects\reward-serve\.venv\Scripts\python.exe -m reward_serve" \
+  --server-cmd ".venv\Scripts\python.exe -m reward_serve" \
   --target-label "reward_serve on CPU, DantheMan124/deberta-preference-reward" \
   --batch-sizes 1,2,4,8,16,32 --wait-ms 0,5,20,50 --rps 1,2,4 \
   --duration 45 --warmup 15 --queue-depth 512

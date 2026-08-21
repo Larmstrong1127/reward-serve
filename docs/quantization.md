@@ -372,7 +372,7 @@ Accuracy (may run on a busy box; the box_quiet report is recorded beside the
 result either way):
 
 ```
-cd D:\ClaudeProjects\reward-serve
+cd <repo root>
 set CUDA_VISIBLE_DEVICES=
 .venv\Scripts\python.exe -m reward_serve.quant.run_accuracy \
   --variants fp32,int8-dynamic,bf16
