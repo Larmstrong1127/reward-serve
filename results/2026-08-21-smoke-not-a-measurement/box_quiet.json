@@ -1,0 +1,8 @@
+{
+  "passed": null,
+  "gate_skipped": true,
+  "smoke": true,
+  "not_a_measurement": true,
+  "reason": "--smoke --no-box-quiet: the quiet-box gate was NOT run. Nothing in this run directory is a measurement of anything. It exists to prove the sweep code path executes end to end and to serve as a test fixture.",
+  "measured_at": "2026-08-21T08:35:13"
+}
