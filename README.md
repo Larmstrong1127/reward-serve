@@ -24,7 +24,7 @@ below is scoped to what has actually been run.
 | A worker made 2 s slow stays `UP` in every health sample — the routing rule, not the health check, shifts load off it, peaking at 100% on A in three sample windows (with 6 router 504s during the fault) | [`results/faults/latency-2s-on-one-worker/summary.json`](results/faults/latency-2s-on-one-worker/summary.json) |
 | 1297 rejections (95.2% of offered load) open no circuit breaker and move no worker out of `UP` | [`results/faults/queue-exhaustion/summary.json`](results/faults/queue-exhaustion/summary.json) |
 | A wedged worker is never marked down — `/readyz` still answers 200 — but nothing waits past the router's 3 s budget: max observed 3023.9 ms | [`results/faults/hang-worker/summary.json`](results/faults/hang-worker/summary.json) |
-| The knee: 72-cell sweep on a gated quiet box — batch size 1 wins everywhere | [`results/2026-08-20-cpu-batch-grid/summary.json`](results/2026-08-20-cpu-batch-grid/summary.json) with `box_quiet.json` beside it |
+| The knee: 72-cell sweep on a gated quiet box — batch size 1 wins everywhere (one run per cell, no intervals; re-run pending) | [`results/2026-08-20-cpu-batch-grid/summary.json`](results/2026-08-20-cpu-batch-grid/summary.json) with `box_quiet.json` beside it |
 | int8-dynamic: 0.7026 → 0.5979, 311 flips per 1,000 pairs, ~1.2x speedup — ruled out | [`results/quantization/accuracy.json`](results/quantization/accuracy.json), [`latency.json`](results/quantization/latency.json), [`flip_decomposition.json`](results/quantization/flip_decomposition.json) |
 | 172 tests, `ruff`, `mypy --strict`, and the vocabulary gate pass | `pytest -q && ruff check . && mypy --strict reward_serve loadgen && python scripts/vocab_gate.py .` |
 
@@ -37,6 +37,13 @@ CPU.** At 4 rps offered, `MAX_BATCH_SIZE=1` serves 4.65 rps at p99 1.9 s with
 zero shed; b32 collapses to 2.12 rps, p99 12.8 s, 43.6% shed, because forward
 time grows worse than linearly with batch (207 ms at batch 1 → 7.4 s at mean
 batch 18). Full grid, plots and the reasoning: [`docs/knee-analysis.md`](docs/knee-analysis.md).
+That run was **one run per cell with no confidence intervals**, and it kept no
+per-request records, so its numbers cannot be recomputed and its p99 is the
+slowest single request in all 72 cells. The harness now persists every request,
+repeats each cell, and puts a bootstrap interval on p99; `scripts/recompute_sweep.py`
+regenerates a whole summary from the raw rows. The re-run has not happened —
+[`docs/knee-analysis.md`](docs/knee-analysis.md) *Uncertainty* has the method and
+the exact command.
 The SLO's latency threshold is now measured too — **0.750 s**, derived by the
 rule fixed in [`docs/slo.md`](docs/slo.md) before the number existed
 (2 × 282 ms max forward + 10 ms wait, rounded up to a bucket edge) — and both

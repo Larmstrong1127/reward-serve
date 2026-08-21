@@ -1,6 +1,12 @@
 # Batch-size knee analysis
 
-**Status: the sweep has NOT been run. This document has no latency or
+**Status of the numbers below: measured on 2026-08-20, one run per cell, no
+confidence intervals, and not recomputable — that run predates per-request
+persistence. The knee finding stands; its precision is unquantified. See
+*Uncertainty* for what has been built to fix that and *Reproducing* for the
+re-run that will.**
+
+**Historical status line, kept for the record: the sweep has NOT been run. This document has no latency or
 throughput findings yet.** The harness that produces them is built, tested and
 verified end to end against the real server; the measurement was refused by the
 quiet-box gate. What that gate saw, and how to produce the missing numbers, is
@@ -80,6 +86,121 @@ claimed here.
 Plots: `throughput_vs_batch.png`, `p99_vs_batch.png`, `knee.png` in the run
 directory, regenerable with `python scripts/plot_sweep.py <summary.json>`.
 
+## Uncertainty
+
+**Status: the method below is implemented and tested; the numbers it produces
+are pending the re-run.** The table above comes from run `2026-08-20`, which
+was one run per cell with no per-request records committed, so none of its
+figures carries an interval and none of them can be recomputed. That is the gap
+this section closes, and it is closed in the harness before it is closed in the
+data. Until the re-run lands, read every figure above as a single observation
+with unquantified spread.
+
+### What "one run per cell" actually cost
+
+Two specific defects, both checkable in the committed files:
+
+1. **No interval.** `p99 = 1,899 ms` at batch 1, 4 rps is one number from one
+   run. Nothing committed says whether a second run would produce 1,850 or
+   2,400, so no two adjacent cells in that grid can be told apart.
+2. **p99 was the maximum, in every cell.** Percentiles here are exact
+   nearest-rank: `p(q) = sorted[ceil(q/100 * n) - 1]`. That returns the largest
+   observation whenever `n < 101`. Run `2026-08-20` measured between 24 and 94
+   successful requests per cell, so in **all 72 cells** the reported p99 is
+   literally the single slowest request of the run — the statistic with the
+   worst possible spread. It is checkable in the committed summary:
+   `latency_p99_ms == latency_max_ms` in all 72 cells. Any re-run needs enough
+   measured requests per cell that p99 stops being the maximum, which is why
+   the re-run command below lengthens the measured window.
+
+### Repeats
+
+A cell now runs `--repeats N` times, default 3. A repeat is a fully independent
+observation: its own server process started fresh (so the allocator, the thread
+pool and the first forward pass are cold again exactly as they were for the
+first repeat), its own warm-up window, and its own seed derived from the run's
+base seed by `loadgen.stats.repeat_seed`, so the arrival process is a different
+draw from the same Poisson distribution rather than a replay of the same one.
+
+Each repeat keeps its own full statistics in `per_repeat`. They are never
+collapsed into a single number and thrown away:
+
+- Counts, rates, latency percentiles and the per-request means are computed over
+  the **pooled** measured requests of every repeat. These are properties of the
+  latency and status distribution, and more samples estimate them better.
+- `window_s`, `send_span_s`, `throughput_rps` and `offered_rps_actual` are
+  **not** pooled. The repeats are separated in time by a server restart, so a
+  pooled wall-clock span would include the gap between them and divide a correct
+  success count by the wrong number of seconds. These are computed per repeat
+  and averaged, and the per-repeat min and max sit next to the mean under
+  `..._repeat_min` / `..._repeat_max`.
+
+### The confidence interval
+
+`summary.json` carries `latency_p99_ci_ms` per cell: a **percentile bootstrap**
+95% confidence interval on p99, over the pooled per-request latencies of that
+cell's successful requests. The method, in full:
+
+1. Pool the measured successful latencies across the cell's repeats — call it
+   *n* observations.
+2. Draw *n* of them **with replacement**, 2,000 times.
+3. Take the exact nearest-rank p99 of each resample — the same percentile rule
+   used everywhere else in this repo, so the interval and the point estimate
+   cannot drift apart definitionally.
+4. Report the 2.5th and 97.5th percentiles of those 2,000 values as the interval.
+
+It is seeded, so it is reproducible: the seed is `sha256(cell_id + the sorted
+repeat seeds)`, and both of those live on every raw row, so a reader holding
+only `raw/` computes the identical interval rather than a similar one. A test
+asserts that byte-for-byte against the committed run.
+
+**What the interval means.** It is the sampling noise of the percentile: how far
+p99 would move if you drew a different set of requests *from the same run
+conditions*. It is a statement about how few slow requests a p99 rests on, and
+nothing more.
+
+**What it does not mean.** It does not cover run-to-run drift of the machine —
+a background process, a thermal state, a different allocator outcome. That is
+what the repeats are for, and they are reported separately:
+`latency_p99_ms_per_repeat`, `latency_p99_ms_repeat_min`, and
+`latency_p99_ms_repeat_max`. When a repeat's p99 falls outside the bootstrap
+interval, the cell is flagged `repeats_disagree_beyond_ci: true`. That flag is a
+**finding, not a defect to average away**: it means the box moved between
+repeats and the difference is larger than sampling noise explains. A cell
+carrying it should be read as "this configuration is not reproducible on this
+box to better than the per-repeat spread", and any comparison against a
+neighbouring cell has to clear that spread, not just the interval.
+
+### Every number is recomputable from raw
+
+`results/<run-id>/raw/<cell_id>.jsonl` holds one line per request — `send_ts`,
+`done_ts`, `latency_ms`, `status`, achieved `batch_size`, `queue_wait_ms`,
+`forward_ms`, `is_warmup`, plus the cell configuration, repeat index and seed.
+Timestamps are written unrounded, because rounding them would put a floor under
+how exactly anyone can reproduce the numbers.
+
+**Warm-up rows stay in the file**, flagged `is_warmup`. They are excluded from
+every statistic, as they always were, but now that exclusion is verifiable
+rather than a claim: recompute with them and the counts change.
+
+```
+python scripts/recompute_sweep.py results/<run-id>
+```
+
+reads `raw/*.jsonl` and **nothing else** — not `summary.json`, not
+`cells.jsonl`, not the server logs — rebuilds every statistic, and only then
+opens `summary.json` to check it. Exit code 1 on any mismatch. The generator's
+own internal counters (`dropped_no_slot`, `max_inflight_observed`, and the run
+configuration echoed into each repeat's stats) cannot be rebuilt from request
+rows, because `dropped_no_slot` counts requests that were never sent and so have
+no row; those are listed in the report as `not_derivable_from_raw` rather than
+silently skipped.
+
+A test runs exactly that against a committed fixture run and asserts equality to
+floating-point tolerance, and a second test doctors a p99 in the summary and
+asserts the check fails. Nothing else in this document is worth more than that
+pair of tests.
+
 ## The earlier refusal, kept for the record
 
 Charter rule 3: a latency or throughput sweep runs only on a quiet box, and
@@ -118,8 +239,13 @@ failing report and the environment record and no `cells.jsonl` and no
 ## The grid, as specified before the run
 
 Grid: `MAX_BATCH_SIZE` ∈ {1, 2, 4, 8, 16, 32} × `MAX_WAIT_MS` ∈ {0, 5, 20, 50}
-× offered load ∈ {1, 2, 4} requests/s. 72 cells, each with its own freshly
-started server process, 15 s of warm-up excluded, 45 s measured, one repeat.
+× offered load ∈ {1, 2, 4} requests/s. 72 cells, each repeat with its own
+freshly started server process. The published run `2026-08-20` used 5 s of
+warm-up and 20 s measured with one repeat — not the 15 s / 45 s this paragraph
+previously claimed, which is readable in `summary.json` under `load` and is
+corrected here rather than quietly fixed. The re-run uses 3 repeats and a longer
+measured window, for the reason given under *Uncertainty*: below 101 measured
+successes, nearest-rank p99 is just the slowest request.
 
 Load is offered **open loop**: arrivals follow a Poisson process at the target
 rate and the generator never waits for a response before sending the next
@@ -177,11 +303,24 @@ says anything about how the same batcher would behave on an accelerator, where
 a forward pass parallelises across the batch rather than competing for the same
 cores. Inputs are synthetic filler text in three length buckets sized in words,
 not model tokens, so they exercise the sequence-length dimension only
-approximately and carry none of the length distribution of real traffic. The
-plan is **one run per cell with no repeats**, so the grid will show no variance
-and none will be claimed: any two adjacent cells that differ by less than the
-run-to-run noise of this box cannot be told apart by it, and that noise has not
-been measured. Warm-up is excluded by wall clock, not by a convergence check.
+approximately and carry none of the length distribution of real traffic.
+
+~~The plan is one run per cell with no repeats, so the grid will show no
+variance and none will be claimed.~~ **Retracted as a plan, still true of the
+published numbers.** The harness now runs `--repeats 3` per cell and reports a
+bootstrap 95% interval on p99 plus the min/max across repeats (see
+*Uncertainty*), and every request is persisted so any of it can be recomputed.
+Run `2026-08-20` — the source of every figure in *Findings* — predates that: it
+is one run per cell, it committed no per-request rows, and its run-to-run noise
+is unmeasured. Those figures therefore still carry the original caveat in full,
+and two adjacent cells of that grid differing by less than an unmeasured noise
+band cannot be told apart. The caveat is retired for the numbers, not just for
+the plan, only when the re-run in *Reproducing* has landed and this paragraph is
+rewritten against its intervals. Separately, that run's p99 is the maximum
+observation in all 72 cells (n never reached 101; see *Uncertainty*), so it is
+the least stable statistic the grid could have reported.
+
+Warm-up is excluded by wall clock, not by a convergence check.
 Each cell restarts the server, which removes cross-cell contamination but means
 every cell also pays a cold allocator and a cold first forward pass inside its
 warm-up window. Finally, the generator and the server share one box and one
@@ -197,7 +336,15 @@ competition is real and is not corrected for.
 - Offered-load levels have not been calibrated on a quiet box. The values in
   "What will be measured" come from a contended probe and must be re-derived
   from a dry run that passes the gate before any of them are published.
-- Cells are not repeated, so run-to-run variance is unmeasured.
+- **The re-run has not happened.** Repeats, intervals and raw persistence are
+  built and tested, but the only sweep against the real server on a quiet box is
+  still `2026-08-20`, which has none of them. Every figure under *Findings* is
+  therefore still a single unrepeated observation with no committed raw rows, and
+  cannot be recomputed by `scripts/recompute_sweep.py` — running it against that
+  directory refuses, by design, rather than pretending.
+- No cell of the published grid has a confidence interval, because intervals are
+  computed at run time from the requests that were actually sent and that run
+  did not keep them. They cannot be back-filled from order statistics.
 - Only the single-pair request form is exercised. The many-pairs form, where
   one request's items can ride in different batches, is untested by this
   harness.
@@ -210,13 +357,39 @@ again if it is not:
 ```
 cd <repo root>
 .venv\Scripts\python.exe -m loadgen.sweep \
-  --run-id 2026-08-18-cpu-batch-grid \
+  --run-id 2026-08-21-cpu-batch-grid-repeats \
   --server-cmd ".venv\Scripts\python.exe -m reward_serve" \
   --target-label "reward_serve on CPU, DantheMan124/deberta-preference-reward" \
   --batch-sizes 1,2,4,8,16,32 --wait-ms 0,5,20,50 --rps 1,2,4 \
-  --duration 45 --warmup 15 --queue-depth 512
-.venv\Scripts\python.exe scripts\plot_sweep.py results\2026-08-18-cpu-batch-grid\summary.json
+  --duration 120 --warmup 15 --repeats 3 --queue-depth 512
+.venv\Scripts\python.exe scripts\recompute_sweep.py results\2026-08-21-cpu-batch-grid-repeats
+.venv\Scripts\python.exe scripts\plot_sweep.py results\2026-08-21-cpu-batch-grid-repeats\summary.json
 ```
 
+`--duration 120` and `--repeats 3` are not arbitrary. At the lowest offered load,
+1 rps, 120 measured seconds gives about 120 successes per repeat, which clears
+the `n >= 101` needed for nearest-rank p99 to stop being the slowest request,
+and pools to roughly 360 across three repeats so the bootstrap interval rests on
+something. The cost is wall time: 72 cells x 3 repeats x (120 s + 15 s warm-up +
+about 9 s of server start, measured from run `2026-08-20`) is roughly 8.6 hours,
+so this is a detached overnight run, not an interactive one.
+
+The recompute step is not optional decoration. If it does not exit 0, the
+summary does not describe the requests that were sent, and nothing from the run
+gets published.
+
 The exact command is also written into `summary.json` as `reproduce_command`,
-and every cell records its own command, environment overrides and port.
+alongside `recompute_command`, and every repeat records its own command,
+environment overrides, seed and port.
+
+### Smoke runs are not measurements
+
+`--smoke` exists to exercise the code path in seconds on a box that is known to
+be busy. It is the only thing that lets `--no-box-quiet` through, and asking for
+that combination without `--smoke` is refused. A smoke run stamps `"smoke":
+true, "not_a_measurement": true` into `summary.json`, into every cell, and into
+the `box_quiet.json` that records the gate was never run.
+`results/2026-08-21-smoke-not-a-measurement/` is one such run, committed as the
+fixture the recompute test regenerates. It measures a sleep in
+`tests/stub_server.py`. No number in it describes the model, and it must never
+be quoted as though it did.
