@@ -105,7 +105,9 @@ def test_require_quiet_writes_the_report_and_exits_when_the_box_is_busy(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """A refusal still has to leave the evidence behind it."""
-    monkeypatch.setattr(box_quiet, "measure", lambda *a, **k: {"passed": False, "cpu_mean_pct": 80.0})
+    monkeypatch.setattr(
+        box_quiet, "measure", lambda *a, **k: {"passed": False, "cpu_mean_pct": 80.0}
+    )
     report = tmp_path / "nested" / "box_quiet.json"
 
     with pytest.raises(SystemExit):
@@ -117,7 +119,9 @@ def test_require_quiet_writes_the_report_and_exits_when_the_box_is_busy(
 def test_require_quiet_returns_the_report_when_the_box_is_quiet(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(box_quiet, "measure", lambda *a, **k: {"passed": True, "cpu_mean_pct": 1.0})
+    monkeypatch.setattr(
+        box_quiet, "measure", lambda *a, **k: {"passed": True, "cpu_mean_pct": 1.0}
+    )
     report = tmp_path / "box_quiet.json"
 
     assert box_quiet.require_quiet(report)["passed"] is True
