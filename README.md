@@ -28,19 +28,22 @@ below is scoped to what has actually been run.
 
 ## What has not been run — and why it is not in the table
 
-**No latency or throughput numbers are published yet.** The load sweep
-(`python -m loadgen.sweep`) refuses to start unless
-[`scripts/box_quiet.py`](scripts/box_quiet.py) passes — CPU under 15%, GPU
-under 10%, no other hot Python process, for 30 seconds — and it has not
-passed on this machine, because a render workload owns the GPU on the
-evenings I have been building. The refusal is itself committed:
-[`results/2026-08-18-cpu-batch-grid/box_quiet.json`](results/2026-08-18-cpu-batch-grid/box_quiet.json)
-holds the failing report and there is deliberately no `summary.json` beside
-it. Timings that leaked into dry runs on the contended box are redacted from
-the artifacts for the same reason. The SLO in [`docs/slo.md`](docs/slo.md)
-therefore ships its availability half complete and its latency threshold as
-an explicit placeholder with the derivation rule fixed; a test fails if the
-doc and the dashboard ever stop agreeing that it is provisional.
+**The measurements landed on 2026-08-20, on a box the gate finally passed**
+(mean CPU 7.93%, GPU 423 MiB — the report sits beside every result it gated).
+The headline: **the knee is at batch size 1 — batching never pays on this
+CPU.** At 4 rps offered, `MAX_BATCH_SIZE=1` serves 4.65 rps at p99 1.9 s with
+zero shed; b32 collapses to 2.12 rps, p99 12.8 s, 43.6% shed, because forward
+time grows worse than linearly with batch (207 ms at batch 1 → 7.4 s at mean
+batch 18). Full grid, plots and the reasoning: [`docs/knee-analysis.md`](docs/knee-analysis.md).
+The SLO's latency threshold is now measured too — **0.750 s**, derived by the
+rule fixed in [`docs/slo.md`](docs/slo.md) before the number existed
+(2 × 282 ms max forward + 10 ms wait, rounded up to a bucket edge) — and both
+burn-rate alerts are live rather than commented out. The quantization study
+gained its latency half: int8-dynamic buys ~1.2x on this CPU, not the 2-4x
+the literature reports, because Comet Lake lacks VNNI
+([`docs/quantization.md`](docs/quantization.md)). An earlier refused sweep is
+kept at [`results/2026-08-18-cpu-batch-grid/`](results/2026-08-18-cpu-batch-grid/) —
+failing gate report, no numbers — as the record of what refusing looks like.
 
 The docker stack under `docker/` (server, OTel collector, Prometheus,
 Grafana with a committed dashboard) is validated structurally by tests, not
@@ -95,7 +98,7 @@ quotes latency from them only as an order of magnitude.
     results/        committed artifacts, each with its box_quiet report
     docs/           contract.md, design-batcher.md, slo.md, observability.md,
                     multi-tier.md (router design + the four fault runs),
-                    knee-analysis.md (method written; findings pending the sweep)
+                    knee-analysis.md (findings from the 72-cell sweep)
     docker/         compose for server + collector + Prometheus + Grafana
 
 ## Run it
