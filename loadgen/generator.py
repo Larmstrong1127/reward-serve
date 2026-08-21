@@ -38,6 +38,7 @@ import os
 import random
 import time
 from dataclasses import asdict, dataclass, field
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
 from typing import Any, Literal
 
@@ -95,6 +96,20 @@ class RequestRecord:
         d["latency_ms"] = self.latency_ms
         d["ttfb_ms"] = self.ttfb_ms
         return d
+
+    @classmethod
+    def from_json(cls, row: dict[str, Any]) -> RequestRecord:
+        """Rebuild a record from a persisted raw row.
+
+        The inverse of `to_json` for every field that feeds a statistic. Extra
+        keys the writer attached (cell id, repeat index, seed, cell config) are
+        ignored here, and the derived `latency_ms` / `ttfb_ms` in the row are
+        ignored too -- they are recomputed from the unrounded timestamps, so a
+        reader who recomputes gets the same number the run published rather than
+        one that drifted through a rounding step.
+        """
+        fields = {f.name for f in dataclass_fields(cls)}
+        return cls(**{k: v for k, v in row.items() if k in fields})
 
 
 @dataclass
