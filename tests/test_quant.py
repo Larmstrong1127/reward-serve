@@ -70,7 +70,8 @@ def test_mean_abs_delta() -> None:
 
 
 @pytest.fixture(scope="module")
-def fp32() -> Any:
+def fp32(hub_checkpoint: None) -> Any:
+    """The real checkpoint; skips with a reason when the Hub is unreachable."""
     return quantize.build_variant("fp32")
 
 
@@ -87,7 +88,7 @@ def test_every_variant_loads_and_returns_one_score_per_pair(variant: str, fp32: 
     assert build.scorer.score_pairs([]) == []
 
 
-def test_int8_dynamic_actually_has_quantized_linear_modules() -> None:
+def test_int8_dynamic_actually_has_quantized_linear_modules(hub_checkpoint: None) -> None:
     build = quantize.build_variant("int8-dynamic")
     assert build.quantized_linear_modules > 0
     assert build.plain_linear_modules == 0

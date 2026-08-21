@@ -32,8 +32,12 @@ PAIRS: list[tuple[str, str]] = [
 
 
 @pytest.fixture(scope="module")
-def model() -> RewardModel:
-    """Loading it at all is the tokenizer_config regression check."""
+def model(hub_checkpoint: None) -> RewardModel:
+    """Loading it at all is the tokenizer_config regression check.
+
+    Skips, with a reason, when the Hub checkpoint cannot be reached; see
+    ``hub_checkpoint`` in conftest.
+    """
     return RewardModel(DEFAULT_MODEL_ID)
 
 

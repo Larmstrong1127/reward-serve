@@ -32,6 +32,10 @@ dev = [
     "mypy>=1.13,<2.0",
     "psutil>=6.0",
     "hypothesis>=6.100,<7.0",
+    # tests/test_slo_and_stack.py parses the compose/rules/dashboard YAML.
+    # It arrives transitively via uvicorn[standard] today; declare it so a
+    # change to that extra cannot silently break the suite.
+    "pyyaml>=6.0",
 ]
 
 [tool.setuptools.packages.find]

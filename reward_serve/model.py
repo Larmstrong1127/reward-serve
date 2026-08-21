@@ -10,7 +10,9 @@ from __future__ import annotations
 import os
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
-os.environ.setdefault("HF_HOME", r"D:\ClaudeCache\hf")
+# No HF_HOME default here: the Hub cache root is the caller's to choose. Setting
+# one machine's absolute path in library code made a stranger's clone create a
+# literal "D:\ClaudeCache\hf" directory in the working directory on Linux.
 
 from collections.abc import Sequence  # noqa: E402
 from dataclasses import dataclass  # noqa: E402

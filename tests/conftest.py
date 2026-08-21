@@ -9,10 +9,10 @@ from __future__ import annotations
 import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
-os.environ.setdefault("HF_HOME", r"D:\ClaudeCache\hf")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import asyncio  # noqa: E402
+import functools  # noqa: E402
 import socket  # noqa: E402
 import subprocess  # noqa: E402
 import sys  # noqa: E402
@@ -25,6 +25,12 @@ import pytest  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STUB = REPO_ROOT / "tests" / "stub_server.py"
+
+# `scripts/` is not an installed package, and several tests import from it.
+# Putting the repo root on the path here rather than in individual test
+# modules means the imports do not depend on collection order.
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 
 class StubScorer:
@@ -59,6 +65,42 @@ class StubScorer:
 @pytest.fixture
 def stub() -> StubScorer:
     return StubScorer()
+
+
+HUB_MODEL_ID = "DantheMan124/deberta-preference-reward"
+
+
+@functools.cache
+def hub_checkpoint_unavailable() -> str | None:
+    """None when the published checkpoint can be reached, else a skip reason.
+
+    CI has no warm Hub cache. The first run downloads the checkpoint; later
+    runs restore it from the HF_HOME cache (see .github/workflows/ci.yml). When
+    the Hub is unreachable -- offline, rate-limited, or the repo has moved --
+    the model tests must say so out loud rather than fail the build for a
+    reason that has nothing to do with the code under test.
+
+    Only the config is fetched here (a few kB), so the probe itself is cheap.
+    """
+    try:
+        from transformers import AutoConfig
+
+        AutoConfig.from_pretrained(HUB_MODEL_ID)
+    except Exception as exc:  # noqa: BLE001 - any failure to reach it is the same answer
+        return (
+            f"the Hub checkpoint {HUB_MODEL_ID} could not be loaded "
+            f"({type(exc).__name__}: {exc}); this test needs the published "
+            "checkpoint, which CI fetches from the Hub and caches under HF_HOME"
+        )
+    return None
+
+
+@pytest.fixture(scope="session")
+def hub_checkpoint() -> None:
+    """Depend on this from any test that loads the real model."""
+    reason = hub_checkpoint_unavailable()
+    if reason:
+        pytest.skip(reason)
 
 
 @pytest.fixture(autouse=True)

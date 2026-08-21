@@ -124,7 +124,7 @@ in a batch, and `on_complete` fires exactly once per accepted item.
 | `QUEUE_DEPTH` | `256` | bounded queue size; beyond it, enqueue returns queue-full |
 | `REQUEST_TIMEOUT_MS` | `5000` | default per-request deadline |
 | `MODEL_ID` | `DantheMan124/deberta-preference-reward` | Hub id to load |
-| `HF_HOME` | `D:\ClaudeCache\hf` | Hub cache root |
+| `HF_HOME` | the Hugging Face default (`~/.cache/huggingface`) | Hub cache root; set it to move the checkpoint cache |
 
 Every variable has a matching CLI flag on `python -m reward_serve`, in
 lower-kebab form: `--max-batch-size`, `--max-wait-ms`, `--queue-depth`,

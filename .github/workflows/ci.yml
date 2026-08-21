@@ -6,31 +6,99 @@ on:
   pull_request:
     branches: [main]
 
+# One box, one run per ref: a superseded push has nothing to prove.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Charter rule 1. There is no GPU on the runner either, but the tests assert
+  # this is set rather than assuming, so it is set here too.
+  CUDA_VISIBLE_DEVICES: ""
+  TOKENIZERS_PARALLELISM: "false"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
 jobs:
   gates:
     name: tests, lint, types, vocabulary
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
-      CUDA_VISIBLE_DEVICES: ""
       HF_HOME: ${{ github.workspace }}/.hf
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          # Required: this repo has no requirements.txt, which is the only
+          # pattern setup-python looks for by default. Without this the cache
+          # step fails the job before a single test runs.
+          cache-dependency-path: pyproject.toml
+
+      # The one real checkpoint (184M DeBERTa) is fetched from the Hub by
+      # tests/test_model.py and tests/test_quant.py. Caching HF_HOME keeps that
+      # download to the first run on a given key rather than every run. It is
+      # cached rather than skipped because "the published checkpoint still
+      # loads under a current transformers" is a claim this repo makes; a test
+      # that never runs cannot back it. If the Hub is unreachable the tests
+      # skip with a reason instead of reddening the badge -- see
+      # tests/conftest.py::hub_checkpoint.
+      - name: Cache the Hub checkpoint
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.hf
+          key: hf-${{ runner.os }}-deberta-preference-reward-v1
+
+      - name: Cache mypy
+        uses: actions/cache@v4
+        with:
+          path: .mypy_cache
+          key: mypy-${{ runner.os }}-py313-${{ hashFiles('pyproject.toml') }}
+          restore-keys: mypy-${{ runner.os }}-py313-
+
+      - name: Install (CPU torch)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e ".[dev]"
+
+      - name: Forbidden scale vocabulary
+        run: python scripts/vocab_gate.py .
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Types
+        run: |
+          mypy --strict reward_serve
+          mypy --strict loadgen
+
+      - name: Tests (CPU only)
+        run: pytest -q --durations=10
+
+  install:
+    name: plain install, as the README tells a reader to do it
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: pip
-      - name: Install (CPU torch)
+          cache-dependency-path: pyproject.toml
+      # `pip install -e .` without the dev extras is what the README's run
+      # instructions ask for. This job exists because an undeclared runtime
+      # dependency is invisible to the gates job, which installs [dev] too.
+      - name: Install and import
         run: |
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install -e ".[dev]"
-      - name: Forbidden scale vocabulary
-        run: python scripts/vocab_gate.py .
-      - name: Lint
-        run: ruff check .
-      - name: Types
-        run: |
-          mypy --strict reward_serve
-          mypy --strict loadgen
-      - name: Tests (CPU only)
-        run: pytest -q
+          python -m pip install -e .
+          python -c "import reward_serve, reward_serve.server, reward_serve.batcher, reward_serve.quant"
+          python -m reward_serve --help
