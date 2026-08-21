@@ -17,8 +17,8 @@ someone else needs in order to decide.
 
 Run:
 
-    cd D:\ClaudeProjects\reward-serve-wt-observability
-    D:\ClaudeProjects\reward-serve\.venv\Scripts\python.exe scripts/box_quiet_calibration.py 6
+    cd <repo root>
+    .venv\Scripts\python.exe scripts/box_quiet_calibration.py 6
 """
 
 from __future__ import annotations

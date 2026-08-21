@@ -40,8 +40,9 @@ reader. A claim they cannot reproduce is worse than no claim.
 6. **Sequence budget from the checkpoint config**, never hardcoded. The owner
    once served this model at 1024 against a 512-trained checkpoint; that story
    is in the model card. Do not repeat it.
-7. **Privacy.** No persona names, no real prompts, no `output/personas` paths,
-   no financial figures. Test fixtures are neutral synthetic text.
+7. **Privacy.** This machine also runs unrelated private work. Nothing from it
+   reaches this repo: no names, no prompts, no paths, no figures from anywhere
+   else. Test fixtures are neutral synthetic text authored for these tests.
 8. **Commits:** plain, imperative, no AI attribution, no Co-Authored-By.
    Commit incrementally — sessions get killed.
 9. **Worktrees.** Each agent works in its own git worktree off `main`. Never

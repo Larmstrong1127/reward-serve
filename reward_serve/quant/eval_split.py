@@ -7,12 +7,12 @@ same truncation filter, and the same tokenizer. So the loader is vendored here
 rather than reimplemented.
 
 Source (read-only, not modified by this repo):
-    D:\ClaudeProjects\evalforge\training\training\data\preference.py
+    evalforge/training/training/data/preference.py
         - PreferencePair
         - load_ultrafeedback_pairs
         - audit_and_filter_pairs
-    D:\ClaudeProjects\evalforge\training\eval_reward.py  (the caller)
-    D:\ClaudeProjects\evalforge\training\reward_results.json  (the artifact)
+    evalforge/training/eval_reward.py  (the caller)
+    evalforge/training/reward_results.json  (the artifact)
 
 The two functions below are copies of that code with types added; the logic is
 unchanged. `audit_and_filter_pairs` is what turns 1988 loaded pairs into the
