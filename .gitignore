@@ -6,3 +6,4 @@ __pycache__/
 results/**/raw/
 docker/grafana-data/
 results/.tier_state.json
+.hypothesis/
