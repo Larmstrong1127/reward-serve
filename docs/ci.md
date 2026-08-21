@@ -78,7 +78,14 @@ GitHub-hosted runner reports:
 
 Nothing is silently deselected: `pytest -q` runs every test in `tests/`,
 including the `slow` marker, which spawns a router and two synthetic workers as
-real processes.
+real processes. Those tests take real ports and real time; they were verified
+green here across repeated runs after the fixture stopped reusing port blocks.
+
+The property tests in `tests/test_router_breaker_model.py` use `hypothesis`
+with `deadline=None`, so a slow runner cannot turn a passing property into a
+`DeadlineExceeded` failure. That matters: hypothesis's default 200 ms
+per-example deadline is one of the most common ways a green suite turns red on
+shared CI hardware.
 
 ## Runtime
 
@@ -88,12 +95,15 @@ Measured on the owner's box against a cold clone and a cold pip cache
 | Step | Cold |
 |---|---|
 | `pip install --upgrade pip` | 7 s |
-| CPU torch from the pytorch index | 91 s |
-| `pip install -e ".[dev]"` | 163 s |
+| CPU torch from the pytorch index | 83 s |
+| `pip install -e ".[dev]"` | 136 s |
 | Vocabulary gate | 0.2 s |
-| `ruff check .` | 0.8 s |
-| `mypy --strict` both packages | 64 s cold cache, 2 s warm |
-| `pytest -q` | 136 s (of which ~30 s is the checkpoint download on a cold `HF_HOME`) |
+| `ruff check .` | 1 s |
+| `mypy --strict` both packages | 66 s cold cache, 3 s warm |
+| `pytest -q` | 165 s, 213 passed and 2 skipped (of which ~30 s is the checkpoint download on a cold `HF_HOME`) |
+
+Gates after the install: about 4 minutes. Install: about 4 minutes cold, less
+with the pip cache restored. The two jobs run in parallel.
 
 The job carries a 30-minute timeout and a concurrency group that cancels a
 superseded run on the same ref.
