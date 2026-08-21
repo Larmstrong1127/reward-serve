@@ -58,8 +58,8 @@ from reward_serve import obs  # noqa: E402
 
 __all__ = [
     "BreakerState",
-    "ProbeLease",
     "Health",
+    "ProbeLease",
     "Router",
     "RouterSettings",
     "Upstream",
@@ -115,7 +115,7 @@ class ProbeLease:
     has since taken.
     """
 
-    __slots__ = ("_epoch", "_released", "_upstream")
+    __slots__ = ("_epoch", "_upstream")
 
     def __init__(self, upstream: Upstream, epoch: int) -> None:
         self._upstream = upstream
@@ -124,11 +124,6 @@ class ProbeLease:
     @property
     def upstream(self) -> Upstream:
         return self._upstream
-
-    @property
-    def holds_probe_slot(self) -> bool:
-        """True only for a lease that actually took the half-open slot."""
-        return self._epoch > 0
 
     def release(self) -> None:
         self._upstream.release_probe_slot(self._epoch)
