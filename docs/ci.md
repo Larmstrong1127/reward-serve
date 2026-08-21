@@ -78,8 +78,10 @@ GitHub-hosted runner reports:
 
 Nothing is silently deselected: `pytest -q` runs every test in `tests/`,
 including the `slow` marker, which spawns a router and two synthetic workers as
-real processes. Those tests take real ports and real time; they were verified
-green here across repeated runs after the fixture stopped reusing port blocks.
+real processes. Those tests take real ports and real time. After the fixture
+stopped reusing port blocks, `tests/test_tier_up.py` plus
+`tests/test_worker_faults.py` ran 19 passed in each of three consecutive runs
+from a cold clone, inside two full-suite runs that were themselves green.
 
 The property tests in `tests/test_router_breaker_model.py` use `hypothesis`
 with `deadline=None`, so a slow runner cannot turn a passing property into a
