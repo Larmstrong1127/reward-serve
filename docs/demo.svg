@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1145" height="972" viewBox="0 0 1145 972" role="img" aria-label="Terminal recording: reward-serve starts, /readyz flips to ready, and ten concurrent requests come back scored with batch metadata.">
+<rect width="100%" height="100%" fill="#12151b" rx="8"/>
+<style>text{font-family:'DejaVu Sans Mono','Cascadia Mono',Consolas,'Courier New',monospace;font-size:14.0px;fill:#d7dce3;white-space:pre}.p{fill:#7fd1a3}.c{fill:#e6dfa8}.d{fill:#8b95a6}.ln{opacity:0}@keyframes k0{0%,0.000%{opacity:0}0.000%,100%{opacity:1}}.n0{animation:k0 20.0s linear infinite}@keyframes k1{0%,1.981%{opacity:0}1.981%,100%{opacity:1}}.n1{animation:k1 20.0s linear infinite}@keyframes k2{0%,18.966%{opacity:0}18.966%,100%{opacity:1}}.n2{animation:k2 20.0s linear infinite}@keyframes k3{0%,26.989%{opacity:0}26.989%,100%{opacity:1}}.n3{animation:k3 20.0s linear infinite}@keyframes k4{0%,35.431%{opacity:0}35.431%,100%{opacity:1}}.n4{animation:k4 20.0s linear infinite}@keyframes k5{0%,35.431%{opacity:0}35.431%,100%{opacity:1}}.n5{animation:k5 20.0s linear infinite}@keyframes k6{0%,43.767%{opacity:0}43.767%,100%{opacity:1}}.n6{animation:k6 20.0s linear infinite}@keyframes k7{0%,51.477%{opacity:0}51.477%,100%{opacity:1}}.n7{animation:k7 20.0s linear infinite}@keyframes k8{0%,51.583%{opacity:0}51.583%,100%{opacity:1}}.n8{animation:k8 20.0s linear infinite}@keyframes k9{0%,51.683%{opacity:0}51.683%,100%{opacity:1}}.n9{animation:k9 20.0s linear infinite}@keyframes k10{0%,51.683%{opacity:0}51.683%,100%{opacity:1}}.n10{animation:k10 20.0s linear infinite}@keyframes k11{0%,51.683%{opacity:0}51.683%,100%{opacity:1}}.n11{animation:k11 20.0s linear infinite}@keyframes k12{0%,51.683%{opacity:0}51.683%,100%{opacity:1}}.n12{animation:k12 20.0s linear infinite}@keyframes k13{0%,54.604%{opacity:0}54.604%,100%{opacity:1}}.n13{animation:k13 20.0s linear infinite}@keyframes k14{0%,54.811%{opacity:0}54.811%,100%{opacity:1}}.n14{animation:k14 20.0s linear infinite}@keyframes k15{0%,54.811%{opacity:0}54.811%,100%{opacity:1}}.n15{animation:k15 20.0s linear infinite}@keyframes k16{0%,58.352%{opacity:0}58.352%,100%{opacity:1}}.n16{animation:k16 20.0s linear infinite}@keyframes k17{0%,58.352%{opacity:0}58.352%,100%{opacity:1}}.n17{animation:k17 20.0s linear infinite}@keyframes k18{0%,59.813%{opacity:0}59.813%,100%{opacity:1}}.n18{animation:k18 20.0s linear infinite}@keyframes k19{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n19{animation:k19 20.0s linear infinite}@keyframes k20{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n20{animation:k20 20.0s linear infinite}@keyframes k21{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n21{animation:k21 20.0s linear infinite}@keyframes k22{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n22{animation:k22 20.0s linear infinite}@keyframes k23{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n23{animation:k23 20.0s linear infinite}@keyframes k24{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n24{animation:k24 20.0s linear infinite}@keyframes k25{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n25{animation:k25 20.0s linear infinite}@keyframes k26{0%,61.166%{opacity:0}61.166%,100%{opacity:1}}.n26{animation:k26 20.0s linear infinite}@keyframes k27{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n27{animation:k27 20.0s linear infinite}@keyframes k28{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n28{animation:k28 20.0s linear infinite}@keyframes k29{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n29{animation:k29 20.0s linear infinite}@keyframes k30{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n30{animation:k30 20.0s linear infinite}@keyframes k31{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n31{animation:k31 20.0s linear infinite}@keyframes k32{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n32{animation:k32 20.0s linear infinite}@keyframes k33{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n33{animation:k33 20.0s linear infinite}@keyframes k34{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n34{animation:k34 20.0s linear infinite}@keyframes k35{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n35{animation:k35 20.0s linear infinite}@keyframes k36{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n36{animation:k36 20.0s linear infinite}@keyframes k37{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n37{animation:k37 20.0s linear infinite}@keyframes k38{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n38{animation:k38 20.0s linear infinite}@keyframes k39{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n39{animation:k39 20.0s linear infinite}@keyframes k40{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n40{animation:k40 20.0s linear infinite}@keyframes k41{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n41{animation:k41 20.0s linear infinite}@keyframes k42{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n42{animation:k42 20.0s linear infinite}@keyframes k43{0%,61.793%{opacity:0}61.793%,100%{opacity:1}}.n43{animation:k43 20.0s linear infinite}@keyframes k44{0%,62.000%{opacity:0}62.000%,100%{opacity:1}}.n44{animation:k44 20.0s linear infinite}</style>
+<g class="ln n0"><text x="18.0" y="36.0"><tspan class="p">$ </tspan><tspan class="c">python -m reward_serve --port 8128</tspan></text></g>
+<g class="ln n1"><text x="18.0" y="56.0"><tspan class="p">$ </tspan><tspan class="c">python scripts/readyz.py http://127.0.0.1:8128/readyz</tspan></text></g>
+<g class="ln n2"><text x="18.0" y="76.0">not listening yet (ConnectError)</text></g>
+<g class="ln n3"><text x="18.0" y="96.0"><tspan class="p">$ </tspan><tspan class="c">python scripts/readyz.py http://127.0.0.1:8128/readyz</tspan></text></g>
+<g class="ln n4"><text x="18.0" y="116.0">INFO:     Started server process [61484]</text></g>
+<g class="ln n5"><text x="18.0" y="136.0">INFO:     Waiting for application startup.</text></g>
+<g class="ln n6"><text x="18.0" y="156.0">not listening yet (ConnectError)</text></g>
+<g class="ln n7"><text x="18.0" y="176.0"></text></g>
+<g class="ln n8"><text x="18.0" y="196.0">Loading weights:   0%|          | 0/202 [00:00&lt;?, ?it/s]</text></g>
+<g class="ln n9"><text x="18.0" y="216.0">Loading weights: 100%|##########| 202/202 [00:00&lt;00:00, 6902.52it/s]</text></g>
+<g class="ln n10"><text x="18.0" y="236.0">INFO:     Application startup complete.</text></g>
+<g class="ln n11"><text x="18.0" y="256.0">INFO:     Uvicorn running on http://127.0.0.1:8128 (Press CTRL+C to quit)</text></g>
+<g class="ln n12"><text x="18.0" y="276.0"><tspan class="p">$ </tspan><tspan class="c">python scripts/readyz.py http://127.0.0.1:8128/readyz</tspan></text></g>
+<g class="ln n13"><text x="18.0" y="296.0">INFO:     127.0.0.1:58214 - "GET /readyz HTTP/1.1" 200 OK</text></g>
+<g class="ln n14"><text x="18.0" y="316.0">200 {"status":"ready","model_loaded":true,"batcher_running":true}</text></g>
+<g class="ln n15"><text x="18.0" y="336.0"><tspan class="p">$ </tspan><tspan class="c">python scripts/dry_run.py --url http://127.0.0.1:8128</tspan></text></g>
+<g class="ln n16"><text x="18.0" y="356.0">INFO:     127.0.0.1:58219 - "GET /readyz HTTP/1.1" 200 OK</text></g>
+<g class="ln n17"><text x="18.0" y="376.0">readyz -&gt; 200 {"status":"ready","model_loaded":true,"batcher_running":true}</text></g>
+<g class="ln n18"><text x="18.0" y="396.0">INFO:     127.0.0.1:58219 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n19"><text x="18.0" y="416.0">INFO:     127.0.0.1:58220 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n20"><text x="18.0" y="436.0">INFO:     127.0.0.1:58221 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n21"><text x="18.0" y="456.0">INFO:     127.0.0.1:58222 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n22"><text x="18.0" y="476.0">INFO:     127.0.0.1:58223 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n23"><text x="18.0" y="496.0">INFO:     127.0.0.1:58224 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n24"><text x="18.0" y="516.0">INFO:     127.0.0.1:58225 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n25"><text x="18.0" y="536.0">INFO:     127.0.0.1:58226 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n26"><text x="18.0" y="556.0">INFO:     127.0.0.1:58227 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n27"><text x="18.0" y="576.0">INFO:     127.0.0.1:58228 - "POST /v1/score HTTP/1.1" 200 OK</text></g>
+<g class="ln n28"><text x="18.0" y="596.0"></text></g>
+<g class="ln n29"><text x="18.0" y="616.0">req     score  batch_size  queue_wait_ms  forward_ms</text></g>
+<g class="ln n30"><text x="18.0" y="636.0">  0   -3.5975           1          16.00      187.00</text></g>
+<g class="ln n31"><text x="18.0" y="656.0">  1   -3.8016           8         156.00      203.00</text></g>
+<g class="ln n32"><text x="18.0" y="676.0">  2   -1.5107           8         156.00      203.00</text></g>
+<g class="ln n33"><text x="18.0" y="696.0">  3   -2.9406           8         156.00      203.00</text></g>
+<g class="ln n34"><text x="18.0" y="716.0">  4   -3.3281           8         156.00      203.00</text></g>
+<g class="ln n35"><text x="18.0" y="736.0">  5   -2.3380           8         156.00      203.00</text></g>
+<g class="ln n36"><text x="18.0" y="756.0">  6   -1.4872           8         156.00      203.00</text></g>
+<g class="ln n37"><text x="18.0" y="776.0">  7   -2.5985           8         156.00      203.00</text></g>
+<g class="ln n38"><text x="18.0" y="796.0">  8   -1.5621           8         156.00      203.00</text></g>
+<g class="ln n39"><text x="18.0" y="816.0">  9   -1.6692           1         359.00       94.00</text></g>
+<g class="ln n40"><text x="18.0" y="836.0"></text></g>
+<g class="ln n41"><text x="18.0" y="856.0">max batch_size observed: 8</text></g>
+<g class="ln n42"><text x="18.0" y="876.0">requests that rode in a batch larger than 1: 8/10</text></g>
+<g class="ln n43"><text x="18.0" y="896.0">{"max_batch_size_observed": 8, "n": 10}</text></g>
+<g class="ln n44"><text x="18.0" y="916.0">exit code 0</text></g>
+<text class="d" x="18.0" y="956.0">real session, 9.3s wall clock, replayed over 20s | CPU only | demonstration, not a benchmark: this box was not gated quiet</text>
+</svg>
