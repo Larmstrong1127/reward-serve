@@ -87,7 +87,14 @@ It is now a lease:
   cancellation from a client hanging up.
 - Releases are idempotent and carry the epoch they were issued with, so a
   lease that outlives its attempt cannot clear a slot a later attempt has
-  since taken, and the two guards above cannot double-release.
+  since taken, and the two guards above cannot double-release. The id is
+  issued from `Upstream.probe_epoch_seq`, which only ever counts up;
+  `probe_epoch` holds the id of the slot currently taken and reads 0 when
+  nothing is held. Those have to be two fields, and that is measured, not
+  argued: while `admit()` incremented `probe_epoch` itself, clearing the slot
+  reset it to 0 and the next `admit()` re-issued id 1, which a lease from an
+  earlier attempt was still holding — so that lease cleared the live slot. The
+  interleaving test in section 4 fails on the single-field version.
 - `Upstream._clear_probe_slot()` is the single place the flag is cleared, and
   the transitions out of HALF_OPEN go through it too.
 
@@ -97,29 +104,71 @@ random-sequence failure shrinks to `probe_ok, probe_ok, request_failure ×3,
 advance_clock_past_open_window, request_cancelled` — the historical bug,
 rediscovered by a test that was never written for it.
 
-## 4. What these tests still cannot catch
+## 4. The interleaving evidence
+
+`tests/test_router_breaker_model.py` drives one request at a time and checks
+its invariants *between* events, so two attempts are never live against one
+upstream at overlapping points inside `attempt` — the exact window the epoch
+guard exists for. `tests/test_router_epoch_guard.py` covers that window. It
+replaces only `Router._send`, with a stub that parks on an `asyncio.Event`, so
+the test chooses where each coroutine is suspended; every wait is on an Event
+another coroutine sets, so nothing is synchronised by sleeping and the whole
+file runs in well under a second. The overlap is not manufactured with a test
+hook: `forward()` already holds the first pick's lease across the entire
+retried attempt against a second worker, so a lease for worker A stays unreleased
+while a request is suspended mid-attempt on worker B.
+
+What is now measured, on the real `Router`, `Upstream`, `pick_lease`,
+`attempt` and `forward`:
+
+- Two `forward()` coroutines racing for one HALF_OPEN upstream: the first takes
+  the slot, and the second is refused with 503 `no_upstream` — not queued, and
+  not admitted alongside the probe — because a HALF_OPEN upstream holding the
+  slot is not `eligible`, so `pick_lease` finds no candidate.
+- The stale-lease case itself: request 1 takes A's slot, fails pre-send so A
+  reopens and its slot is cleared, retries onto B and suspends there still
+  owing a release for A. The clock passes A's open window, request 2 takes a
+  fresh slot on A, and only then does request 1's stale release fire. It does
+  not clear request 2's slot, request 2's probe completes, and A ends CLOSED
+  with the model suite's invariants holding.
+- A stale release arriving after the breaker CLOSED: state stays CLOSED,
+  `breaker_consecutive_failures` stays 0, `breaker_opened_at` stays cleared,
+  health is untouched.
+- Slot ids are never reissued across repeated open/half-open cycles.
+- Rapid cycling under a firehose of releases from every other epoch id, fired
+  while a probe is in flight: the live slot survives each one, a concurrent
+  request is still refused, and the model suite's invariant assertions — which
+  this file imports rather than restates — hold between cycles.
+
+The evidence that these have teeth: with the epoch comparison in
+`release_probe_slot` neutralized so any release clears the slot, three of them
+fail (the stale-lease case and both firehose cases); with it restored, all pass.
+
+## 5. What these tests still cannot catch
 
 They run one router object, in one process, on one event loop, with a fake
 clock and with `Router._send` replaced — so what they prove is that the
-transition table and the slot protocol are internally consistent under every
-event ordering the walk and the random sequences reach. They do not prove the
-breaker behaves well against a real worker. Nothing here exercises a real
-socket, so a partial write, a half-closed connection, a keep-alive connection
-that dies between the pick and the send, or an `httpx` exception type not in
-`PRE_SEND_ERRORS` is outside their reach; the socket-level cases live in the
-stub-upstream tests and the fault runs instead. Nothing here runs two coroutines
-against the same upstream at genuinely overlapping points inside `attempt`, so a
-true interleaving race between an admit and a release is only argued for by the
-epoch guard, not demonstrated. The fake clock means real time never moves
-backwards, jumps, or drags under CPU contention. And because this is one router
-process, there is no test at all of two routers agreeing about one worker —
-that would need a second process holding its own copy of this state, which this
-project does not have and does not claim to have.
+transition table, the slot protocol and its behaviour under interleaved
+attempts are internally consistent. They do not prove the breaker behaves well
+against a real worker. Nothing here exercises a real socket, so a partial
+write, a half-closed connection, a keep-alive connection that dies between the
+pick and the send, or an `httpx` exception type not in `PRE_SEND_ERRORS` is
+outside their reach; the socket-level cases live in the stub-upstream tests and
+the fault runs instead. The interleaving tests choose their suspension points,
+which is what makes them deterministic and also what bounds them: they cover
+the orderings the author picked — a release arriving after a later admit,
+after a close, and in bulk from dead epochs — not every ordering an event loop
+could produce, and not preemption at a point `_send` does not park at. The fake
+clock means real time never moves backwards, jumps, or drags under CPU
+contention. And because this is one router process, there is no test at all of
+two routers agreeing about one worker — that would need a second process
+holding its own copy of this state, which this project does not have and does
+not claim to have.
 
 ## Not done
 
-- No test drives two concurrent attempts that overlap inside `attempt` against
-  the same upstream; the epoch guard that would make that safe is argued for,
-  not measured.
+- The interleaving tests park at points inside `_send`; no test randomises the
+  suspension point or searches orderings the way the model suite searches
+  states.
 - The walk is breadth-first to depth 8 over bucketed states. Behaviour that
   needs a longer causal chain than that is only reached by the random tails.
