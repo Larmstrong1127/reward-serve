@@ -1,5 +1,15 @@
 # reward-serve
 
+**A continuous-batching inference server for one 184M reward model, on one machine, CPU only — with a load harness, tracing, metrics, an SLO, and every published number backed by a committed artifact.**
+
+![Terminal recording: the server starts, /readyz answers "not listening yet" and then 200 ready, and scripts/dry_run.py fires 10 concurrent requests that come back scored with batch_size 8. Real 9.3 s session replayed over 20 s, CPU only. This is a demonstration, not a benchmark: the box was not gated quiet by scripts/box_quiet.py, so the timings in it are not published figures.](docs/demo.svg)
+
+- **The knee is at batch size 1 — batching never paid on this CPU.** 72-cell sweep on a box the quiet gate passed; one run per cell, no intervals, re-run pending → [knee analysis](docs/knee-analysis.md#findings-run-2026-08-20-cpu-batch-grid-quiet-box)
+- **int8-dynamic is ruled out: 0.7026 → 0.5979 pairwise accuracy for ~1.2x speed.** One checkpoint, one split, one CPU without VNNI — not a verdict on int8 anywhere else → [quantization](docs/quantization.md#ranking-preservation)
+- **Every p99 in that sweep is the slowest single request, not a percentile.** The run kept no per-request rows; the harness now does and puts an interval on p99, but the re-run has not happened → [uncertainty](docs/knee-analysis.md#what-one-run-per-cell-actually-cost)
+
+![Architecture: a client posts to one server process whose bounded queue feeds the batcher and then the model, with observability hooks emitting spans and metrics; below, a router forwards to N worker processes — all of it one machine, N worker processes, not many machines.](docs/architecture.svg)
+
 A continuous-batching inference server for my own published reward model,
 [`DantheMan124/deberta-preference-reward`](https://huggingface.co/DantheMan124/deberta-preference-reward)
 (184M DeBERTa, Bradley-Terry pairwise head), with a load harness, tracing,

@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="660" viewBox="0 0 980 660"
+     role="img"
+     aria-label="Architecture: a client calls one server process whose bounded queue feeds a batcher and then the model; observability hooks emit spans and metrics. Below, a router forwards to N worker processes, all on one machine.">
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --ink: #1c2230;
+      --dim: #566072;
+      --line: #7a8496;
+      --box: #ffffff;
+      --box2: #e8ecf3;
+      --accent: #2f5d8c;
+      --warn: #8c4a2f;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #12161d;
+        --ink: #e6eaf1;
+        --dim: #a3adbd;
+        --line: #7a8496;
+        --box: #1b212b;
+        --box2: #242c38;
+        --accent: #7fb3e0;
+        --warn: #e0a17f;
+      }
+    }
+    .bg { fill: var(--bg); }
+    .box { fill: var(--box); stroke: var(--line); stroke-width: 1.5; }
+    .box2 { fill: var(--box2); stroke: var(--line); stroke-width: 1.5; }
+    .grp { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 6 5; }
+    text { font-family: 'Segoe UI', 'DejaVu Sans', Helvetica, Arial, sans-serif; fill: var(--ink); }
+    .t { font-size: 15px; font-weight: 600; }
+    .s { font-size: 12px; fill: var(--dim); }
+    .lbl { font-size: 12px; fill: var(--dim); }
+    .hdr { font-size: 13px; font-weight: 700; fill: var(--accent); letter-spacing: .6px; }
+    .big { font-size: 16px; font-weight: 700; fill: var(--warn); }
+    .arr { stroke: var(--line); stroke-width: 1.8; fill: none; marker-end: url(#a); }
+    .arrd { stroke: var(--line); stroke-width: 1.4; fill: none; stroke-dasharray: 4 4; marker-end: url(#a); }
+    .am { fill: var(--line); }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" class="am"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="980" height="660" rx="10"/>
+
+  <!-- ============ single process tier ============ -->
+  <text class="hdr" x="28" y="34">ONE SERVER PROCESS</text>
+
+  <rect class="box" x="28" y="52" width="132" height="70" rx="8"/>
+  <text class="t" x="46" y="80">client</text>
+  <text class="s" x="46" y="100">loadgen / curl</text>
+  <text class="s" x="46" y="114">POST /v1/score</text>
+
+  <rect class="grp" x="186" y="44" width="620" height="150" rx="10"/>
+  <text class="lbl" x="200" y="64">reward_serve.server (FastAPI, uvicorn, single process)</text>
+
+  <rect class="box2" x="204" y="76" width="150" height="98" rx="8"/>
+  <text class="t" x="220" y="104">queue</text>
+  <text class="s" x="220" y="124">bounded depth</text>
+  <text class="s" x="220" y="140">full &#8594; 429 at once</text>
+  <text class="s" x="220" y="156">past deadline &#8594; dropped</text>
+
+  <rect class="box2" x="386" y="76" width="170" height="98" rx="8"/>
+  <text class="t" x="402" y="104">batcher</text>
+  <text class="s" x="402" y="124">MAX_BATCH_SIZE</text>
+  <text class="s" x="402" y="140">MAX_WAIT_MS window</text>
+  <text class="s" x="402" y="156">sweeps backlog first</text>
+
+  <rect class="box2" x="588" y="76" width="200" height="98" rx="8"/>
+  <text class="t" x="604" y="104">model</text>
+  <text class="s" x="604" y="124">DeBERTa 184M, CPU only</text>
+  <text class="s" x="604" y="140">seq budget from the</text>
+  <text class="s" x="604" y="156">checkpoint config</text>
+
+  <path class="arr" d="M 160 87 L 200 87"/>
+  <path class="arr" d="M 354 125 L 382 125"/>
+  <path class="arr" d="M 556 125 L 584 125"/>
+  <path class="arrd" d="M 788 155 C 830 155 830 100 806 100"/>
+  <text class="s" x="820" y="182">scores back</text>
+  <text class="s" x="820" y="196">on the same</text>
+  <text class="s" x="820" y="210">request</text>
+
+  <!-- ============ observability ============ -->
+  <text class="hdr" x="28" y="238">OBSERVABILITY HOOKS</text>
+  <rect class="box" x="186" y="248" width="620" height="82" rx="8"/>
+  <text class="s" x="204" y="272">on_enqueue</text>
+  <text class="s" x="308" y="272">on_batch_start</text>
+  <text class="s" x="432" y="272">on_batch_end</text>
+  <text class="s" x="556" y="272">on_complete</text>
+  <text class="s" x="204" y="298">OTel spans: one request span per caller, one batch.forward span carrying</text>
+  <text class="s" x="204" y="314">batch.size and a span link to every sibling in the batch.</text>
+  <text class="s" x="556" y="298">Prometheus: queue depth,</text>
+  <text class="s" x="556" y="314">batch size, latency, outcomes.</text>
+
+  <path class="arrd" d="M 260 178 L 260 244"/>
+  <path class="arrd" d="M 470 178 L 470 244"/>
+  <path class="arrd" d="M 690 178 L 690 244"/>
+
+  <!-- ============ multi-process tier ============ -->
+  <text class="hdr" x="28" y="382">MULTI-PROCESS TIER</text>
+  <text class="big" x="230" y="382">one machine, N worker processes</text>
+  <text class="s" x="230" y="402">Every worker below is a full copy of the server box above, in its own OS process on this same box.</text>
+
+  <rect class="box" x="28" y="430" width="132" height="70" rx="8"/>
+  <text class="t" x="46" y="458">client</text>
+  <text class="s" x="46" y="478">POST /v1/score</text>
+
+  <rect class="box2" x="204" y="416" width="192" height="130" rx="8"/>
+  <text class="t" x="220" y="444">router</text>
+  <text class="s" x="220" y="464">picks a worker</text>
+  <text class="s" x="220" y="480">per-worker health: UP /</text>
+  <text class="s" x="220" y="496">SUSPECT / DOWN</text>
+  <text class="s" x="220" y="512">circuit breaker + one</text>
+  <text class="s" x="220" y="528">half-open probe slot</text>
+
+  <rect class="grp" x="440" y="408" width="366" height="212" rx="10"/>
+  <text class="lbl" x="454" y="428">worker processes, static list, no supervisor</text>
+
+  <rect class="box" x="458" y="440" width="330" height="48" rx="8"/>
+  <text class="t" x="474" y="470">worker 1 &#8212; queue &#8594; batcher &#8594; model</text>
+  <rect class="box" x="458" y="500" width="330" height="48" rx="8"/>
+  <text class="t" x="474" y="530">worker 2 &#8212; queue &#8594; batcher &#8594; model</text>
+  <rect class="box" x="458" y="560" width="330" height="44" rx="8"/>
+  <text class="s" x="474" y="587">worker N &#8212; two were run; more were not</text>
+
+  <path class="arr" d="M 160 465 L 200 465"/>
+  <path class="arr" d="M 396 464 L 454 464"/>
+  <path class="arr" d="M 396 480 L 454 524"/>
+  <path class="arrd" d="M 396 496 L 454 578"/>
+
+  <text class="s" x="820" y="452">one trace id</text>
+  <text class="s" x="820" y="468">spans router</text>
+  <text class="s" x="820" y="484">&#8594; worker</text>
+  <text class="s" x="820" y="500">&#8594; batch</text>
+
+  <text class="s" x="28" y="640">Not a service for many users, and not distributed: one box, a handful of processes, CPU only.</text>
+</svg>
