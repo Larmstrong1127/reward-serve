@@ -279,12 +279,18 @@ class ContinuousBatcher:
 
         # Only now spend real time waiting for the batch to grow.
         #
-        # Windows asyncio timers fire EARLY: the loop clock resolution here is
-        # 15.625 ms, and a 5 ms wait_for returns in ~0.05 ms under load. So a
-        # timeout is NOT proof that flush_at has passed. Re-check the deadline
-        # against the loop clock and keep waiting until it has genuinely
-        # elapsed; otherwise MAX_WAIT_MS values below ~50 ms silently collapse
-        # to zero and every "wait" setting behaves identically.
+        # The Windows loop clock is coarse: loop.time() advances in ~15.6 ms
+        # ticks here, so one tick after enqueue, `flush_at - loop.time()` can
+        # already read non-positive for any wait below the resolution -- the
+        # deadline ARITHMETIC expires, not the real window. (Measured against
+        # time.perf_counter, wait_for never returns early -- 0 of 100 trials;
+        # the earlier "fires early" reading was this same coarse clock unable
+        # to see a 5 ms interval. Reproduction:
+        # job-pipeline/upstream-drafts/repro_asyncio_early_timer.py.) So a
+        # timeout is not proof the window has passed. Re-check the deadline
+        # and keep waiting; otherwise sub-resolution MAX_WAIT_MS values
+        # collapse to zero. With the re-check they floor at ~one tick
+        # (~15 ms) instead -- smaller waits cannot exist on this clock.
         flush_at = first.enqueued_at + self.max_wait_s
         while len(batch) < self.max_batch_size:
             remaining = flush_at - loop.time()

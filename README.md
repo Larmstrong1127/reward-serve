@@ -72,12 +72,16 @@ quotes latency from them only as an order of magnitude.
    unit tests submitted items simultaneously against a fresh timer and never
    saw it; the first live dry run returned `batch_size: 1` on all ten
    requests. Fixed by sweeping the queued backlog before waiting.
-2. **Windows asyncio timers fire early.** The loop clock here has 15.625 ms
-   resolution and a 5 ms `wait_for` returned in 0.05 ms in 20 of 20 trials.
-   Treating that timeout as the deadline collapsed every `MAX_WAIT_MS` under
-   ~50 ms to zero — the sweep would have compared wait settings that never
-   differed. Fixed by re-checking the deadline against the loop clock; the
-   regression test measures a 0.18 ms mean hold on the old code.
+2. **Coarse-clock deadline arithmetic collapsed short wait windows.** The
+   Windows loop clock advances in ~15.6 ms ticks, so one tick after enqueue
+   the computed remaining wait for a sub-resolution `MAX_WAIT_MS` was already
+   negative and the batcher flushed a lone item after ~0.18 ms — the sweep
+   would have compared wait settings that never differed. (First diagnosed as
+   "timers fire early"; a later measurement against `perf_counter` showed
+   timers never fire early — 0 of 100 trials — and the early readings were
+   the coarse clock unable to see a 5 ms interval. The fix was right, the
+   first explanation was not, and both are on the record.) Fixed by
+   re-checking the deadline; sub-resolution waits now floor at ~one tick.
 3. **Dropped items leaked the observability FIFO.** Timed-out and cancelled
    items were removed before `on_batch_start`, so the queue-depth gauge
    drifted upward forever and later batches linked the wrong request spans.

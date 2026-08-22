@@ -187,16 +187,18 @@ async def test_backlog_is_batched_not_drained_one_at_a_time() -> None:
     assert all(r.batch_size == 6 for r in results)
 
 
-async def test_max_wait_is_honoured_despite_early_timers() -> None:
-    """Windows asyncio timers fire early; short wait windows must not collapse.
+async def test_max_wait_survives_coarse_clock_deadline_arithmetic() -> None:
+    """Coarse-clock deadline arithmetic must not collapse short wait windows.
 
-    On this box a 5 ms ``wait_for`` returned in ~0.05 ms in 20 of 20 trials
-    (loop clock resolution 15.625 ms). If a premature TimeoutError is treated
-    as the deadline, a max_wait_ms of 5 flushes a lone item after ~0.05 ms and
-    every small wait setting behaves identically. The batcher must instead
-    re-check the deadline and hold the item until the window has genuinely
-    elapsed. We use a small window (5 ms) because that is where the bug lives,
-    and average over trials because a single hold is quantised to the clock.
+    loop.time() advances in ~15.6 ms ticks on this box, so one tick after
+    enqueue the computed remaining wait for a 5 ms window is already negative
+    -- the arithmetic expires even though (measured against perf_counter)
+    timers never fire early. Pre-fix, that flushed a lone item after ~0.18 ms
+    mean and every small wait setting behaved identically. The batcher must
+    re-check the deadline and hold the item; with the re-check, sub-resolution
+    waits floor at ~one clock tick instead of collapsing to zero. We use a
+    small window (5 ms) because that is where the bug lives, and average over
+    trials because a single hold is quantised to the clock.
     """
     import time
 
