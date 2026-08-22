@@ -254,10 +254,17 @@ class Upstream:
     breaker_consecutive_failures: int = 0
     breaker_opened_at: float | None = None
     breaker_probe_inflight: bool = False
-    # Monotonic id of the half-open slot currently held. Zero means "not held".
-    # It exists so a release can prove it is giving back its own slot and not
-    # one a subsequent attempt has taken.
+    # Id of the half-open slot currently held. Zero means "not held". It exists
+    # so a release can prove it is giving back its own slot and not one a
+    # subsequent attempt has taken.
     probe_epoch: int = 0
+    # The id generator behind it, which only ever counts up. It has to be a
+    # separate field: clearing the slot sets `probe_epoch` back to 0 -- "not
+    # held" -- so counting up from `probe_epoch` on the next admit re-issues an
+    # id a lease from a dead attempt may still be holding, and that lease then
+    # clears the live slot. Measured, not argued: the case is driven in
+    # tests/test_router_epoch_guard.py.
+    probe_epoch_seq: int = 0
     # The lease handed out by the last successful `admit`, waiting to be picked
     # up by the attempt it belongs to. `take_lease` is what collects it.
     pending_lease: ProbeLease | None = field(default=None, repr=False)
@@ -342,7 +349,8 @@ class Upstream:
             self.breaker_probe_inflight = False
         if self.breaker_probe_inflight:
             return None
-        self.probe_epoch += 1
+        self.probe_epoch_seq += 1
+        self.probe_epoch = self.probe_epoch_seq
         self.breaker_probe_inflight = True
         return self._issue_lease(epoch=self.probe_epoch)
 

@@ -295,6 +295,41 @@ def test_stale_release_does_not_clear_a_later_attempts_slot():
     asyncio.run(run())
 
 
+def test_probe_epoch_is_never_reissued_after_the_slot_is_cleared():
+    """A slot id is never handed out twice, which is what makes the guard work.
+
+    An id that is recycled is an id a lease from a dead attempt can match. This
+    pins the generator: across repeated open -> half-open -> open cycles, every
+    slot taken has a strictly larger id than the one before it, even though
+    ``probe_epoch`` itself is reset to 0 every time the slot is cleared.
+    """
+
+    async def run() -> None:
+        clock = FakeClock()
+        rt = make_router(clock)
+        tx = Transport()
+        tx.install(rt)
+        bring_up(rt, "A")
+        a = upstream(rt, "A")
+
+        seen: list[int] = []
+        for _ in range(4):
+            await open_breaker(rt, tx, "A")
+            clock.advance(BREAKER_OPEN_S + 0.2)
+            tx.script["A"] = "ok"
+            tx.arm("A")
+            task = asyncio.ensure_future(rt.forward(b"{}", {}))
+            await tx.wait_entered("A")
+            seen.append(a.probe_epoch)
+            tx.release("A")
+            await task
+            assert a.probe_epoch == 0
+
+        assert seen == sorted(set(seen)), f"a slot id was reissued: {seen}"
+
+    asyncio.run(run())
+
+
 # --- (c) stale release arriving after the breaker closed ----------------------
 
 
