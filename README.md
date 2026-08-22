@@ -129,7 +129,8 @@ Two tiers — one router in front of two worker processes on the same machine:
 ## Not done
 
 The quantization study is done — accuracy, flip decomposition, and latency all measured (`docs/quantization.md`). Cancellation after batch
-assembly begins still scores the item and discards the result. There is no
+assembly begins still scores the item and discards the result. A batch
+abandoned at stop() now fails its callers explicitly rather than hanging them. There is no
 request priority and no length bucketing.
 
 On the router tier specifically: the routing rule is not corrected for

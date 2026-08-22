@@ -223,3 +223,41 @@ async def test_max_wait_is_honoured_despite_early_timers() -> None:
     mean_hold = sum(holds) / len(holds)
     # Collapsed batcher: ~0.05 ms. Correct batcher: >= a few ms (clock-quantised).
     assert mean_hold >= 2.0, f"mean hold {mean_hold:.2f} ms; the wait window collapsed"
+
+
+async def test_stop_fails_an_abandoned_in_flight_batch_instead_of_hanging_it() -> None:
+    """A forward that outlives the stop grace must fail its callers out loud.
+
+    Before this fix, stop() cleared the queue but a batch already inside the
+    scorer was invisible to it: cancelling the loop task left every caller in
+    that batch awaiting a future nobody would ever resolve.
+    """
+    import asyncio
+
+    from reward_serve.batcher import ContinuousBatcher, DeadlineExceeded
+
+    release = asyncio.Event()
+
+    class _StuckScorer:
+        def score_pairs(self, pairs):  # type: ignore[no-untyped-def]
+            # Block the (threaded) forward until told otherwise.
+            import time
+
+            while not release.is_set():
+                time.sleep(0.01)
+            return [0.0 for _ in pairs]
+
+    b = ContinuousBatcher(_StuckScorer(), max_batch_size=4, max_wait_ms=5, queue_depth=8)
+    b.stop_grace_s = 0.2  # do not wait 30 s in a test
+    await b.start()
+    caller = asyncio.ensure_future(b.submit("p", "r", timeout_ms=60_000))
+    await asyncio.sleep(0.1)  # let it enter the forward
+    try:
+        await asyncio.wait_for(b.stop(), timeout=5.0)
+        # The caller must resolve promptly with an error -- not hang.
+        with pytest.raises(DeadlineExceeded):
+            await asyncio.wait_for(caller, timeout=2.0)
+    finally:
+        release.set()
+        if not caller.done():
+            caller.cancel()

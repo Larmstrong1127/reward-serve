@@ -127,6 +127,7 @@ class ContinuousBatcher:
         self.hooks = hooks or BatcherHooks()
 
         self._queue: asyncio.Queue[_Item] = asyncio.Queue(maxsize=queue_depth)
+        self._in_flight: list[_Item] = []
         self._task: asyncio.Task[None] | None = None
         self._stop = asyncio.Event()
         self._accepting = False
@@ -175,6 +176,16 @@ class ContinuousBatcher:
                 await asyncio.wait_for(asyncio.shield(task), timeout=self.stop_grace_s)
             except (TimeoutError, asyncio.CancelledError):
                 task.cancel()
+                # The forward we just abandoned may hold a batch whose callers
+                # are still awaiting their futures. Fail them out loud.
+                for item in self._in_flight:
+                    if not item.future.done():
+                        self._fail(
+                            item,
+                            DeadlineExceeded("server stopped while this batch was being scored"),
+                            Status.TIMEOUT,
+                        )
+                self._in_flight = []
         while not self._queue.empty():
             item = self._queue.get_nowait()
             self._fail(item, DeadlineExceeded("server stopped before scoring"), Status.TIMEOUT)
@@ -225,7 +236,15 @@ class ContinuousBatcher:
                 continue
             batch = await self._fill(first)
             if batch:
-                await self._forward(batch)
+                # Remember what is on the wire so an abandoned loop can fail
+                # these callers explicitly instead of leaving their futures
+                # dangling forever (stop() clears the queue, but a batch that
+                # outlives the stop grace was invisible to it before this).
+                self._in_flight = batch
+                try:
+                    await self._forward(batch)
+                finally:
+                    self._in_flight = []
 
     async def _next_item(self) -> _Item | None:
         """Wait for one item while staying responsive to stop()."""
