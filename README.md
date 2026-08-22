@@ -36,7 +36,7 @@ below is scoped to what has actually been run.
 | A wedged worker is never marked down — `/readyz` still answers 200 — but nothing waits past the router's 3 s budget: max observed 3023.9 ms | [`results/faults/hang-worker/summary.json`](results/faults/hang-worker/summary.json) |
 | The knee: 72-cell sweep on a gated quiet box — batch size 1 wins everywhere (one run per cell, no intervals; re-run pending) | [`results/2026-08-20-cpu-batch-grid/summary.json`](results/2026-08-20-cpu-batch-grid/summary.json) with `box_quiet.json` beside it |
 | int8-dynamic: 0.7026 → 0.5979, 311 flips per 1,000 pairs, ~1.2x speedup — ruled out | [`results/quantization/accuracy.json`](results/quantization/accuracy.json), [`latency.json`](results/quantization/latency.json), [`flip_decomposition.json`](results/quantization/flip_decomposition.json) |
-| 213 tests pass and 2 skip with a stated reason, plus `ruff`, `mypy --strict` on both packages, and the vocabulary gate | `pytest -q && ruff check . && mypy --strict reward_serve loadgen && python scripts/vocab_gate.py .` — the same sequence CI runs; what CI does and does not cover is in [`docs/ci.md`](docs/ci.md) |
+| 221 tests pass and 2 skip with a stated reason, plus `ruff`, `mypy --strict` on both packages, and the vocabulary gate | `pytest -q && ruff check . && mypy --strict reward_serve loadgen && python scripts/vocab_gate.py .` — the same sequence CI runs; what CI does and does not cover is in [`docs/ci.md`](docs/ci.md) |
 
 ## What was measured late, and the refusals that preceded it
 

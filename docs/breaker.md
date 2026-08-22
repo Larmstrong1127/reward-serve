@@ -106,10 +106,16 @@ rediscovered by a test that was never written for it.
 
 ## 4. The interleaving evidence
 
-`tests/test_router_breaker_model.py` drives one request at a time and checks
-its invariants *between* events, so two attempts are never live against one
-upstream at overlapping points inside `attempt` — the exact window the epoch
-guard exists for. `tests/test_router_epoch_guard.py` covers that window. It
+`tests/test_router_breaker_model.py` now has a `two_concurrent_requests` event
+in its alphabet: it starts two `forward()` coroutines against the one upstream,
+whose stubbed transport suspends twice before answering, so the pair really is
+live at overlapping points inside `attempt` — the exact window the epoch guard
+exists for — and the walk searches those interleavings from every reachable
+state. `test_the_concurrent_event_really_overlaps_two_attempts` asserts the
+overlap itself (two sends in flight at once), so the event cannot quietly
+serialise later and go on passing. Invariants are still checked *between*
+events, not inside them. `tests/test_router_epoch_guard.py` covers the same
+window with orderings chosen by hand. It
 replaces only `Router._send`, with a stub that parks on an `asyncio.Event`, so
 the test chooses where each coroutine is suspended; every wait is on an Event
 another coroutine sets, so nothing is synchronised by sleeping and the whole
@@ -167,8 +173,11 @@ not claim to have.
 
 ## Not done
 
-- The interleaving tests park at points inside `_send`; no test randomises the
-  suspension point or searches orderings the way the model suite searches
-  states.
+- The interleaving tests park at points inside `_send`, and so does the model
+  suite's concurrent event: the suspension points are fixed by the stub, which
+  is what keeps the search deterministic and also what bounds it. No test
+  randomises where a coroutine is suspended, and the concurrent event runs
+  exactly two attempts with one scripted outcome pair — not N attempts, and not
+  every pair of outcomes.
 - The walk is breadth-first to depth 8 over bucketed states. Behaviour that
   needs a longer causal chain than that is only reached by the random tails.

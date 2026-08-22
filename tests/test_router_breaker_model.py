@@ -45,6 +45,14 @@ REQ_500 = "request_failure"
 REQ_CONNECT = "request_connect_error"
 REQ_TIMEOUT = "request_timeout"
 REQ_CANCEL = "request_cancelled"
+# Two attempts in flight against the one upstream at the same time. Every other
+# event in this alphabet drives one request to completion before the next
+# begins, so the walk never searched interleavings -- `docs/breaker.md` section
+# 5 names that as the gap this event closes. The two coroutines are scheduled
+# cooperatively at suspension points the stubbed transport already has, so the
+# ordering is fixed by the event loop rather than by a clock, and the search
+# stays deterministic under `derandomize=True`.
+REQ_CONCURRENT = "two_concurrent_requests"
 
 # The alphabet is weighted, not uniform, and the weights are the one piece of
 # tuning in this file. Uniform events almost never produce the run that reaches
@@ -65,6 +73,7 @@ EVENT_WEIGHTS = {
     REQ_CONNECT: 2,
     REQ_TIMEOUT: 2,
     REQ_CANCEL: 3,
+    REQ_CONCURRENT: 3,
 }
 EVENTS = [event for event, weight in EVENT_WEIGHTS.items() for _ in range(weight)]
 REPAIR_EVENTS = [PROBE_OK, REQ_OK, ADVANCE_PAST]
@@ -103,7 +112,25 @@ def _install_send(rt: Router, outcome: dict[str, str]) -> None:
     """Replace only the transport. Everything above it is the shipped code."""
 
     async def fake_send(client, up, payload, headers, budget, started):
-        kind = outcome["kind"]
+        # A scripted concurrent pair consumes its own outcomes in order; every
+        # other event leaves `script` empty and uses the single outcome.
+        script = outcome.get("script")
+        kind = script.pop(0) if script else outcome["kind"]
+        # How many sends were live at once, so a test can assert the concurrent
+        # event really overlaps instead of quietly serialising.
+        outcome["inflight"] = outcome.get("inflight", 0) + 1
+        outcome["max_inflight"] = max(outcome.get("max_inflight", 0), outcome["inflight"])
+        try:
+            return await _body(kind, up)
+        finally:
+            outcome["inflight"] -= 1
+
+    async def _body(kind, up):
+        # Two suspension points inside the attempt. A single request passes
+        # straight through them; two in flight interleave here, which is the
+        # whole point of REQ_CONCURRENT.
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
         if kind == REQ_TIMEOUT:
             # What `asyncio.wait_for` raises when the budget expires; raising
             # it here drives `attempt`'s real timeout handler.
@@ -141,6 +168,17 @@ async def _apply(rt: Router, clock: FakeClock, event: str, outcome: dict[str, st
     # touches a lease itself -- if it did, it would be testing its own release
     # instead of the router's, and a leak in the router would still pass.
     outcome["kind"] = event
+    if event == REQ_CONCURRENT:
+        # One upstream, two callers. The first send fails and the second
+        # succeeds, so whichever ordering the loop picks, one attempt is
+        # recording a failure while the other is live inside `attempt` -- the
+        # window a probe slot can be taken in one and released by the other.
+        outcome["kind"] = REQ_OK
+        outcome["script"] = [REQ_500, REQ_OK]
+        tasks = [asyncio.ensure_future(rt.forward(b"{}", {})) for _ in range(2)]
+        await asyncio.gather(*tasks, return_exceptions=True)
+        outcome.pop("script", None)
+        return
     if event == REQ_CANCEL:
         task = asyncio.ensure_future(rt.forward(b"{}", {}))
         for _ in range(3):
@@ -354,3 +392,33 @@ def test_only_successes_always_make_a_worker_eligible_again(prefix, tail):
         assert up.eligible, "a worker that only sees successes must become eligible again"
 
     asyncio.run(run())
+
+
+def test_the_concurrent_event_really_overlaps_two_attempts():
+    """The interleaving event is only worth anything if it interleaves.
+
+    `REQ_CONCURRENT` starts two `forward()` coroutines against the one
+    upstream. If some future change made them run one after the other, the
+    event would still pass every invariant and would search nothing, so the
+    overlap itself is asserted here rather than assumed.
+    """
+
+    async def run() -> dict[str, object]:
+        clock = FakeClock()
+        rt = _make_router(clock)
+        outcome: dict[str, object] = {"kind": REQ_OK}
+        _install_send(rt, outcome)
+        # A worker is not eligible until it has passed `success_threshold`
+        # probes, so a fresh router answers 503 and sends nothing. Get it UP
+        # first; a CLOSED breaker on an UP worker takes every caller offered.
+        await _apply(rt, clock, PROBE_OK, outcome)
+        await _apply(rt, clock, PROBE_OK, outcome)
+        await _apply(rt, clock, REQ_CONCURRENT, outcome)
+        _check_invariants(rt, "after the concurrent pair")
+        return outcome
+
+    result = asyncio.run(run())
+    assert result["max_inflight"] == 2, (
+        f"the two forwards did not overlap: max in-flight was {result['max_inflight']}"
+    )
+    assert result["inflight"] == 0, "a send was left in flight"
