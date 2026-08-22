@@ -16,8 +16,11 @@ cold, rerun the numbers, and read every claim against the code. Design for that
 reader. A claim they cannot reproduce is worse than no claim.
 
 ## Non-negotiable rules
-1. **CPU-only enforcement.** Set `CUDA_VISIBLE_DEVICES=""` in every entrypoint,
-   test, and script. Never allocate on the GPU. A render fleet owns it.
+1. **CPU-only enforcement.** This repo's venv installs the `+cpu` torch build,
+   which cannot reach a GPU at all — that build choice, not an env var, is the
+   real guarantee. Still set `CUDA_VISIBLE_DEVICES` defensively, and note the
+   Windows quirk: `""` is not reliably honoured by CUDA-enabled builds here;
+   `-1` is. Never allocate on the GPU. A render fleet owns it.
 2. **Every number has an artifact.** Any figure that appears in prose must be
    in a committed JSON/CSV under `results/`, produced by a committed script,
    with the exact command recorded next to it. No exceptions, including
