@@ -60,6 +60,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from loadgen.contention import ContentionSampler  # noqa: E402
 from scripts.box_quiet import require_quiet  # noqa: E402
 
 DEFAULT_BATCH_SIZES: tuple[int, ...] = (1, 2, 4, 8, 16, 32)
@@ -344,18 +345,22 @@ async def run_cell(
 
     per_repeat: list[dict[str, Any]] = []
     all_records: list[list[RequestRecord]] = []
-    for i in range(n_repeats):
-        seed = repeat_seed(args.seed, i)
-        rep_rec, rep_records = await run_repeat(
-            batch_size=batch_size, wait_ms=wait_ms, rps=rps, seed=seed, repeat=i,
-            args=args, out_dir=out_dir, cell_id=cell_id,
-        )
-        rep_rec["n_raw_rows"] = write_raw_rows(
-            raw_path, rep_records, cell_id=cell_id, repeat=i, seed=seed,
-            batch_size=batch_size, wait_ms=wait_ms, rps=rps, truncate=(i == 0),
-        )
-        per_repeat.append(rep_rec)
-        all_records.append(rep_records)
+    # The quiet gate ran once, before the grid; this sampler records what else
+    # the box did during THIS cell, so every cell carries its own evidence.
+    with ContentionSampler() as sampler:
+        for i in range(n_repeats):
+            seed = repeat_seed(args.seed, i)
+            rep_rec, rep_records = await run_repeat(
+                batch_size=batch_size, wait_ms=wait_ms, rps=rps, seed=seed, repeat=i,
+                args=args, out_dir=out_dir, cell_id=cell_id,
+            )
+            rep_rec["n_raw_rows"] = write_raw_rows(
+                raw_path, rep_records, cell_id=cell_id, repeat=i, seed=seed,
+                batch_size=batch_size, wait_ms=wait_ms, rps=rps, truncate=(i == 0),
+            )
+            per_repeat.append(rep_rec)
+            all_records.append(rep_records)
+    record["contention"] = sampler.report()
 
     record["per_repeat"] = per_repeat
     ok_idx = [i for i, r in enumerate(per_repeat) if r.get("status") == "ok"]
