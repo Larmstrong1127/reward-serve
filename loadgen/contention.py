@@ -26,6 +26,7 @@ be busy.
 
 from __future__ import annotations
 
+import contextlib
 import shutil
 import subprocess
 import threading
@@ -83,10 +84,8 @@ class ContentionSampler:
 
         me = psutil.Process()
         pids = {me.pid}
-        try:
+        with contextlib.suppress(Exception):
             pids.update(c.pid for c in me.children(recursive=True))
-        except Exception:
-            pass
         return pids
 
     def _loop(self) -> None:
@@ -105,10 +104,8 @@ class ContentionSampler:
                 if name.startswith("python") and p.pid not in ours:
                     foreign[p.pid] = p
                     self._foreign_names[p.pid] = name
-                    try:
+                    with contextlib.suppress(Exception):
                         p.cpu_percent(None)  # prime the counter
-                    except Exception:
-                        pass
             while not self._stop.wait(self.interval_s):
                 self._cpu_total.append(psutil.cpu_percent(None))
                 g = _gpu_sample()
