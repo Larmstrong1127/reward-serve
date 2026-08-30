@@ -471,11 +471,24 @@ async def run_sweep(args: argparse.Namespace) -> int:
     preflight = await preflight_batching(args, out_dir)
 
     cells_path = out_dir / "cells.jsonl"
-    cells_path.write_text("", encoding="utf-8")
+    done: dict[str, dict[str, Any]] = {}
+    if args.resume and cells_path.exists():
+        for line in cells_path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                rec = json.loads(line)
+                done[rec["cell_id"]] = rec
+        print(f"[sweep] resume: {len(done)} completed cells kept", flush=True)
+    else:
+        cells_path.write_text("", encoding="utf-8")
     cells: list[dict[str, Any]] = []
     combos = list(grid(args.batch_sizes, args.wait_ms, args.rps))
     print(f"[sweep] {len(combos)} cells -> {out_dir}", flush=True)
     for i, (b, w, r) in enumerate(combos, 1):
+        cell_id = f"b{b}_w{int(w)}_r{r:g}"
+        if cell_id in done:
+            print(f"[sweep] {i}/{len(combos)} {cell_id} already complete, skipped", flush=True)
+            cells.append(done[cell_id])
+            continue
         print(f"[sweep] {i}/{len(combos)} batch={b} wait={w}ms rps={r}", flush=True)
         rec = await run_cell(batch_size=b, wait_ms=w, rps=r, args=args, out_dir=out_dir)
         cells.append(rec)
@@ -484,6 +497,7 @@ async def run_sweep(args: argparse.Namespace) -> int:
 
     summary: dict[str, Any] = {
         "run_id": args.run_id,
+        "resumed": bool(args.resume),
         "smoke": bool(args.smoke),
         "not_a_measurement": bool(args.smoke),
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -575,6 +589,18 @@ def validate_args(args: argparse.Namespace) -> argparse.Namespace:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="reward-serve batch-policy sweep")
     ap.add_argument("--run-id", required=True)
+    ap.add_argument(
+        "--resume",
+        action="store_true",
+        help=(
+            "Keep completed cells already in this run directory and run only "
+            "the missing ones. Without it an existing cells.jsonl is "
+            "truncated. Exists because long grids on this machine get killed "
+            "by shell-tree death, and losing hours of gated measurement to a "
+            "relaunch is worse than a run stitched from two sessions -- the "
+            "stitch is disclosed in the summary as 'resumed'."
+        ),
+    )
     ap.add_argument("--results-dir", type=Path, default=REPO_ROOT / "results")
     ap.add_argument("--server-cmd", default=DEFAULT_SERVER_CMD)
     ap.add_argument("--server-cwd", type=Path, default=REPO_ROOT)
