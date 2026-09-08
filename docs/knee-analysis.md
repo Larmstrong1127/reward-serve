@@ -39,7 +39,54 @@ From `results/2026-08-18-cpu-batch-grid/environment.json`
 pass uses whatever thread count torch defaults to on 8 physical cores, and that
 default is what the sweep will measure. It is not pinned.
 
-## Findings (run `2026-08-20-cpu-batch-grid`, quiet box)
+## Findings, three-repeat run (`2026-08-21-cpu-batch-grid-repeats`)
+
+The re-run specified below landed on 2026-08-30: 72 cells, 3 repeats each,
+120 s measured windows, 369–1,430 successful requests per cell. **p99 is the
+maximum in 0 of 72 cells** (it was 72 of 72 before). `scripts/recompute_sweep.py`
+regenerates every statistic in `summary.json` from `raw/*.jsonl` alone and
+exits 0. Two things a reader should know about how the artifact was made:
+the run was **resumed** after the machine killed it at cell 27 (`"resumed":
+true`; the first 26 cells and the last 46 come from two sessions), and only
+the 46 second-session cells carry a per-cell contention record — all 46 read
+un-contended (no foreign python process hot, GPU memory ≤ 1,116 MiB).
+
+**The knee holds.** Batch size 1 has the lowest p99 in all 12 rps×wait groups.
+At 4 rps offered, `MAX_WAIT_MS=20`:
+
+| config | throughput | p99 | p99 bootstrap 95% CI | per-repeat p99 | shed |
+|---|---|---|---|---|---|
+| b1 | 3.96 rps | 2,144 ms | [2,056, 2,268] | 2,297 / 2,056 / 2,171 | 0.0% |
+| b2 | 3.18 rps | 5,938 ms | [5,871, 5,976] | 5,979 / 5,951 / 5,797 | 17.0% |
+| b8 | 2.71 rps | 7,811 ms | [7,724, 7,917] | 7,879 / 7,682 / 7,814 | 29.4% |
+| b32 | 2.59 rps | 13,719 ms | [13,303, 14,148] | 13,474 / 13,303 / 14,238 | 31.7% |
+
+The numbers moved against the 20-second run (b1 was 4.65 rps / 1,899 ms /
+0% shed; b32 was 2.12 rps / 12,777 ms / 43.6%) — longer windows let the
+backlog spiral settle rather than snapshot it — and the ordering did not.
+
+**The bootstrap interval is too narrow, and the harness's own check said so.**
+`repeats_disagree_beyond_ci` fired on 58 of 72 cells. Measured directly: the
+spread of the three per-repeat p99s exceeds the pooled CI's width in **56 of
+72 cells**, median 1.4×, worst 14×. The reason is in the CI's own `method`
+field — *percentile bootstrap over pooled per-request latencies* — which
+treats every request as an independent draw and therefore captures only
+within-window sampling noise. It cannot see the between-repeat component,
+and at low load that component dominates: at 1 rps, b4's three repeats
+landed at 813 / 1,362 / 723 ms against a pooled interval of [738, 1,362]. A
+fresh server process is a different draw in ways the pooled resample never
+resamples. So the honest reading of this artifact: **the CI bounds the
+p99 of the pooled sample; the per-repeat min/max bounds the p99 of the
+cell**, and with three repeats the latter is wide. The ordering claim
+survives because b1 beats every other batch size in every repeat of every
+group, not because the intervals separate cleanly.
+
+This is the third time in this repository that a measurement claimed more
+than it delivered — every p99 was a maximum, the epoch guard was argued and
+false, and now a confidence interval that measured the wrong variance — and
+the second time the instrument built to check the claim is what caught it.
+
+## Findings, single-repeat run (run `2026-08-20-cpu-batch-grid`, quiet box)
 
 The gate passed — mean CPU 7.93%, GPU 423 MiB — and all 72 cells ran
 (`results/2026-08-20-cpu-batch-grid/`, one freshly started server per cell,
@@ -54,9 +101,8 @@ The gate passed — mean CPU 7.93%, GPU 423 MiB — and all 72 cells ran
 > throughput in 9 of 12 — it loses three by at most 0.004 rps, inside any
 > plausible noise), and the shed columns
 > are unaffected — but no two adjacent p99 values here can be told apart, and
-> none has a confidence interval. A re-run with longer windows and repeats is
-> specified below; until it lands, treat every p99 as one observation, not an
-> estimated tail.
+> none has a confidence interval. The three-repeat re-run above supersedes
+> these numbers; they are kept because the ordering they show survived it.
 
 **The knee is at batch size 1. On this CPU, batching never pays.**
 

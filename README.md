@@ -46,7 +46,7 @@ The headline: **the knee is at batch size 1 — batching never pays on this
 CPU.** At 4 rps offered, `MAX_BATCH_SIZE=1` serves 4.65 rps at p99 1.9 s with
 zero shed; b32 collapses to 2.12 rps, p99 12.8 s, 43.6% shed, because forward
 time grows worse than linearly with batch (207 ms at batch 1 → 7.4 s at mean
-batch 18). Full grid, plots and the reasoning: [`docs/knee-analysis.md`](docs/knee-analysis.md).
+batch 18; three-repeat re-run confirms the ordering in all 12 groups). Full grid, plots and the reasoning: [`docs/knee-analysis.md`](docs/knee-analysis.md).
 That run was **one run per cell with no confidence intervals**, and it kept no
 per-request records, so its numbers cannot be recomputed and its p99 is the
 slowest single request in all 72 cells. The harness now persists every request,
