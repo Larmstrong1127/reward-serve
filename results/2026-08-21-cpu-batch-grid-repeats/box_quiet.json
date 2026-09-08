@@ -1,10 +1,10 @@
 {
-  "passed": false,
+  "passed": true,
   "window_s": 30,
-  "cpu_mean_pct": 42.07,
-  "gpu_mem_used_max_mib": 23061,
-  "gpu_util_mean_pct": 93.1,
-  "gpu_util_max_pct": 100,
+  "cpu_mean_pct": 6.44,
+  "gpu_mem_used_max_mib": 785,
+  "gpu_util_mean_pct": 17.87,
+  "gpu_util_max_pct": 22,
   "hot_python_pids": {},
   "thresholds": {
     "cpu_max": 15.0,
@@ -12,5 +12,5 @@
     "gpu_util_mean_max": 20.0,
     "other_python_max": 20.0
   },
-  "measured_at": "2026-08-21T19:44:10"
+  "measured_at": "2026-08-30T13:00:36"
 }

@@ -1,0 +1,542 @@
+INFO:     Started server process [46936]
+INFO:     Waiting for application startup.
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights: 100%|##########| 202/202 [00:00<00:00, 7684.10it/s]
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:60568 (Press CTRL+C to quit)
+INFO:     127.0.0.1:60588 - "GET /readyz HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60615 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60628 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60629 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60630 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60631 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60632 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60615 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60638 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60639 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60644 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60648 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60628 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60629 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60644 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60644 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60680 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60681 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60682 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60683 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60684 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60687 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60644 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60691 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60692 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60695 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60696 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60697 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60698 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60680 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60681 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60644 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60680 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60681 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60741 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60742 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60743 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60747 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60748 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60749 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60752 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60753 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60754 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60755 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60756 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60758 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60759 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60741 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60742 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60743 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60747 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60748 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60752 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60753 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60754 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60620 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60621 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60626 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60627 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60645 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60646 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60647 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60741 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60742 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60743 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60747 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60748 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60752 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60753 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60754 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60785 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60786 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60787 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60788 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60747 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60748 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60752 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60753 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60785 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60786 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60787 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60788 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60805 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60806 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60807 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60811 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60812 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60813 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60814 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60815 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60816 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60747 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60748 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60785 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60786 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60788 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60805 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60806 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60747 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60748 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60814 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60815 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60816 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60785 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60786 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60788 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60805 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60806 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60849 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60850 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60851 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60852 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60855 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60856 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60857 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60747 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60748 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60814 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60815 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60816 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60624 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60625 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60785 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60786 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60788 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60805 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60806 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60849 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60850 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60595 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60599 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60600 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60601 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60603 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60605 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60606 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60612 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60589 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60593 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60594 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60598 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60613 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "POST /v1/score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "POST /v1/score HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:60814 - "POST /v1/score HTTP/1.1" 200 OK

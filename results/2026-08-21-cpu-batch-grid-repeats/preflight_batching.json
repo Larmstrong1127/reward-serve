@@ -1,0 +1,8 @@
+{
+  "cell": "preflight_b8_w20_r4",
+  "status": "ok",
+  "offered_rps": 4.0,
+  "mean_batch_size": 6.3758,
+  "n_success": 330,
+  "requirement": "mean_batch_size > 1.0 at MAX_BATCH_SIZE=8 under offered load"
+}
