@@ -67,6 +67,20 @@ visible in the transcript as "UNGATED". Both hooks have a kill switch
 (`MEASUREMENT_GATE_DISABLED=1`, `CLAIM_GATE_DISABLED=1`) for the case where
 the gate itself is what is being debugged.
 
+## Known limitations
+
+* The measurement gate matches the command **text**, not what the command
+  does. A `git commit` whose message mentions `loadgen.sweep`, or an `echo`
+  of the same, pays the three-second sample and gets an `allow`. Harmless, but
+  a real false positive; it fired that way on the commit that logged the first
+  live fires. Matching on the resolved executable would need the harness to
+  tell the hook what it resolved, which it does not.
+* The claim gate sees only the text of the one Write or Edit, never the file
+  it lands in, so a disclaimer already on the target line does not rescue an
+  Edit whose `new_string` carries the term alone. That produces an ask, not a
+  deny, by design.
+* Neither hook fires for the owner typing in a terminal. They gate the agent.
+
 ## Wiring
 
 The hooks are installed in the owner's user-level Claude Code settings so
