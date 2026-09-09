@@ -174,6 +174,9 @@ def test_forbidden_word_on_a_claim_surface_asks() -> None:
     )
     assert _decision(r) == "ask"
     assert "distributed" in r["hookSpecificOutput"]["permissionDecisionReason"]
+    # visible to the agent even when the ask is settled by a classifier it never sees
+    hso = r["hookSpecificOutput"]
+    assert hso["additionalContext"] == hso["permissionDecisionReason"]
 
 
 def test_disclaimer_on_the_same_line_passes() -> None:

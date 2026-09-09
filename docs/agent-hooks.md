@@ -100,4 +100,5 @@ project applies to its SLO alerts and its eval gate.
 
 | date | hook | decision | what it caught |
 |---|---|---|---|
-| (none yet) | | | installation not yet proven live; this table is the proof |
+| 2026-09-09 05:43 | measurement_gate | allow | installation proof: a harmless `echo` whose text contained `loadgen.sweep`; sample came back as context: GPU 552 MiB, util mean 20.86%, no foreign python, no in-flight measurement |
+| 2026-09-09 05:47 | claim_gate | ask | installation proof: a scratch `docs/_hook_proof.md` containing "a distributed system"; the first attempt fired but was INVISIBLE (the ask was settled by the auto-mode classifier and the hook returned no context) -- fixed same hour by returning the verdict as `additionalContext` too; second attempt visible, file deleted |

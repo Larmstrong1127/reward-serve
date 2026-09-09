@@ -82,16 +82,21 @@ def decide(
         return None
     shown = "\n  ".join(f"{n}: {line[:140]}" for n, line in hits[:8])
     more = f"\n  (+{len(hits) - 8} more)" if len(hits) > 8 else ""
+    reason = (
+        f"claim_gate: {len(hits)} line(s) about to enter a claim surface use scale "
+        "vocabulary this one-box project cannot back (distributed / at scale / "
+        "production-grade / enterprise / datacenter / cluster). Add a disclaimer on "
+        f"the same line or confirm it is intended.\n  {shown}{more}"
+    )
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "ask",
-            "permissionDecisionReason": (
-                f"claim_gate: {len(hits)} line(s) about to enter a claim surface use scale "
-                "vocabulary this one-box project cannot back (distributed / at scale / "
-                "production-grade / enterprise / datacenter / cluster). Add a disclaimer on "
-                f"the same line or confirm it is intended.\n  {shown}{more}"
-            ),
+            "permissionDecisionReason": reason,
+            # Also handed back as context: in auto/bypass modes the "ask" is
+            # settled by a classifier the agent never sees, and a gate whose
+            # verdict is invisible to the writer is not a gate.
+            "additionalContext": reason,
         }
     }
 
