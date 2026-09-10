@@ -96,21 +96,21 @@ the gate itself is what is being debugged.
 
 The hooks are installed in the owner's user-level Claude Code settings so
 they fire in every session on this machine, whatever directory it started in.
-The entry, for reference (paths are this machine's):
+The entry, for reference (`<repo>` is the absolute checkout path):
 
 ```json
 "hooks": {
   "SessionStart": [
     {"hooks": [{"type": "command", "timeout": 15,
-                "command": "D:/ClaudeProjects/reward-serve/.venv/Scripts/python.exe D:/ClaudeProjects/reward-serve/scripts/hooks/session_facts.py"}]}
+                "command": "<repo>/.venv/Scripts/python.exe <repo>/scripts/hooks/session_facts.py"}]}
   ],
   "PreToolUse": [
     {"matcher": "Bash",
      "hooks": [{"type": "command", "timeout": 20,
-                "command": "D:/ClaudeProjects/reward-serve/.venv/Scripts/python.exe D:/ClaudeProjects/reward-serve/scripts/hooks/measurement_gate.py"}]},
+                "command": "<repo>/.venv/Scripts/python.exe <repo>/scripts/hooks/measurement_gate.py"}]},
     {"matcher": "Write|Edit",
      "hooks": [{"type": "command", "timeout": 10,
-                "command": "D:/ClaudeProjects/reward-serve/.venv/Scripts/python.exe D:/ClaudeProjects/reward-serve/scripts/hooks/claim_gate.py"}]}
+                "command": "<repo>/.venv/Scripts/python.exe <repo>/scripts/hooks/claim_gate.py"}]}
   ]
 }
 ```

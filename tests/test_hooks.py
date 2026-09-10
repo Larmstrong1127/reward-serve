@@ -170,7 +170,7 @@ def _edit(path: str, new: str) -> dict[str, Any]:
 
 def test_forbidden_word_on_a_claim_surface_asks() -> None:
     r = claim_gate.decide(
-        _write(r"D:\ClaudeProjects\reward-serve\README.md", "A distributed serving layer."), ROOTS
+        _write(r"C:\work\reward-serve\README.md", "A distributed serving layer."), ROOTS
     )
     assert _decision(r) == "ask"
     assert "distributed" in r["hookSpecificOutput"]["permissionDecisionReason"]
@@ -181,7 +181,7 @@ def test_forbidden_word_on_a_claim_surface_asks() -> None:
 
 def test_disclaimer_on_the_same_line_passes() -> None:
     r = claim_gate.decide(
-        _write("D:/ClaudeProjects/reward-serve/README.md", "This is not distributed."), ROOTS
+        _write("/work/reward-serve/README.md", "This is not distributed."), ROOTS
     )
     assert r is None
 
@@ -189,7 +189,7 @@ def test_disclaimer_on_the_same_line_passes() -> None:
 def test_edit_scans_only_the_new_text() -> None:
     r = claim_gate.decide(
         _edit(
-            "D:/ClaudeProjects/prep-a-step/content/reward-serve.json", '"pitch": "production-grade"'
+            "/work/prep-a-step/content/reward-serve.json", '"pitch": "production-grade"'
         ),
         ROOTS,
     )
@@ -198,7 +198,7 @@ def test_edit_scans_only_the_new_text() -> None:
 
 def test_code_files_are_never_gated() -> None:
     r = claim_gate.decide(
-        _write("D:/ClaudeProjects/reward-serve/reward_serve/router.py", "# a cluster of upstreams"),
+        _write("/work/reward-serve/reward_serve/router.py", "# a cluster of upstreams"),
         ROOTS,
     )
     assert r is None
@@ -206,14 +206,14 @@ def test_code_files_are_never_gated() -> None:
 
 def test_charter_is_exempt() -> None:
     r = claim_gate.decide(
-        _write("D:/ClaudeProjects/reward-serve/CHARTER.md", "forbidden: distributed"), ROOTS
+        _write("/work/reward-serve/CHARTER.md", "forbidden: distributed"), ROOTS
     )
     assert r is None
 
 
 def test_unrelated_projects_are_not_gated() -> None:
     r = claim_gate.decide(
-        _write("D:/ClaudeProjects/shorts-factory/README.md", "a cluster of renders"), ROOTS
+        _write("/work/some-other-project/README.md", "a cluster of renders"), ROOTS
     )
     assert r is None
 
@@ -247,7 +247,7 @@ def _run(
 
 
 def test_claim_gate_script_speaks_the_hook_protocol() -> None:
-    p = _run("claim_gate.py", _write("D:/ClaudeProjects/reward-serve/docs/x.md", "runs at scale"))
+    p = _run("claim_gate.py", _write("/work/reward-serve/docs/x.md", "runs at scale"))
     assert p.returncode == 0, p.stderr
     out = json.loads(p.stdout)
     assert out["hookSpecificOutput"]["permissionDecision"] == "ask"
@@ -255,7 +255,7 @@ def test_claim_gate_script_speaks_the_hook_protocol() -> None:
 
 def test_claim_gate_script_is_silent_when_clean() -> None:
     p = _run(
-        "claim_gate.py", _write("D:/ClaudeProjects/reward-serve/docs/x.md", "one machine, honestly")
+        "claim_gate.py", _write("/work/reward-serve/docs/x.md", "one machine, honestly")
     )
     assert p.returncode == 0 and p.stdout.strip() == ""
 
