@@ -1,0 +1,7 @@
+{
+  "sha": "9e70db7",
+  "collected": 264,
+  "collected_at": "2026-09-09T19:12:07",
+  "command": "pytest --collect-only -q",
+  "note": "collected = tests + skips; the README states passed and skipped separately"
+}

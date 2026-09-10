@@ -283,3 +283,32 @@ def test_garbage_stdin_fails_open() -> None:
     )
     assert p.returncode == 0
     assert json.loads(p.stdout)["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+
+# --- session facts ---------------------------------------------------------------
+
+
+def test_session_facts_line_marks_a_stale_cache() -> None:
+    from scripts.hooks import session_facts
+
+    line = session_facts.facts_line(
+        "abc1234", {"sha": "old0000", "collected": 259}, "success @ abc1234", refreshing=True
+    )
+    assert "STALE" in line and "refreshing" in line and "259" in line
+
+
+def test_session_facts_line_trusts_a_fresh_cache() -> None:
+    from scripts.hooks import session_facts
+
+    line = session_facts.facts_line(
+        "abc1234", {"sha": "abc1234", "collected": 261}, None, refreshing=False
+    )
+    assert "261 tests collected (cached for this commit)" in line
+    assert "CI unknown" in line and "STALE" not in line
+
+
+def test_session_facts_line_survives_no_cache_and_no_git() -> None:
+    from scripts.hooks import session_facts
+
+    line = session_facts.facts_line(None, None, None, refreshing=True)
+    assert "test count unknown" in line and "collecting" in line

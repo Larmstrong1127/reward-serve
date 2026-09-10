@@ -58,6 +58,17 @@ A hit produces **ask** with the offending lines. It never denies: a caveat the
 regex misreads is the author's call. It never touches code files, and
 `CHARTER.md`, which lists the forbidden words on purpose, is exempt.
 
+## `session_facts.py` (event: `SessionStart`)
+
+The third hook exists because the sweep on 2026-09-09 found every claim
+surface six tests stale and nobody had noticed. At session start it prints the
+HEAD sha, the collected test count, and the last CI conclusion as context, so a
+surface quoting a different number is a visible disagreement from the first
+turn. The count is cached in `results/test_count.json` keyed by sha
+(`pytest --collect-only` takes ~22 s here, far too slow for a start hook); on a
+miss it prints the stale value, says STALE, and refreshes detached for next
+time. Under one second on a hit. Fails open to a shorter line.
+
 ## Fail-open, on purpose
 
 Every failure inside either hook -- unreadable stdin, psutil missing, the
@@ -102,7 +113,7 @@ The entry, for reference (paths are this machine's):
 
 ## What this does and does not prove
 
-Written and tested: 32 tests in `tests/test_hooks.py` cover every row of the
+Written and tested: 35 tests in `tests/test_hooks.py` cover every row of the
 decision table with fabricated samples, and pipe real payloads through each
 script as a subprocess to pin the stdin/stdout contract.
 
