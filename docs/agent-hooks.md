@@ -100,6 +100,10 @@ The entry, for reference (paths are this machine's):
 
 ```json
 "hooks": {
+  "SessionStart": [
+    {"hooks": [{"type": "command", "timeout": 15,
+                "command": "D:/ClaudeProjects/reward-serve/.venv/Scripts/python.exe D:/ClaudeProjects/reward-serve/scripts/hooks/session_facts.py"}]}
+  ],
   "PreToolUse": [
     {"matcher": "Bash",
      "hooks": [{"type": "command", "timeout": 20,
@@ -127,3 +131,4 @@ project applies to its SLO alerts and its eval gate.
 |---|---|---|---|
 | 2026-09-09 05:43 | measurement_gate | allow | installation proof: a harmless `echo` whose text contained `loadgen.sweep`; sample came back as context: GPU 552 MiB, util mean 20.86%, no foreign python, no in-flight measurement |
 | 2026-09-09 05:47 | claim_gate | ask | installation proof: a scratch `docs/_hook_proof.md` containing "a distributed system"; the first attempt fired but was INVISIBLE (the ask was settled by the auto-mode classifier and the hook returned no context) -- fixed same hour by returning the verdict as `additionalContext` too; second attempt visible, file deleted |
+| 2026-09-09 19:12 | session_facts | context | pipe test only so far (`264 tests collected; CI success @ 9e70db7`, 0.9 s); a SessionStart hook cannot fire inside the session that installs it -- the first real fire is the next session's first line, and this row gets replaced when it lands |
