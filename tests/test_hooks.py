@@ -180,17 +180,13 @@ def test_forbidden_word_on_a_claim_surface_asks() -> None:
 
 
 def test_disclaimer_on_the_same_line_passes() -> None:
-    r = claim_gate.decide(
-        _write("/work/reward-serve/README.md", "This is not distributed."), ROOTS
-    )
+    r = claim_gate.decide(_write("/work/reward-serve/README.md", "This is not distributed."), ROOTS)
     assert r is None
 
 
 def test_edit_scans_only_the_new_text() -> None:
     r = claim_gate.decide(
-        _edit(
-            "/work/prep-a-step/content/reward-serve.json", '"pitch": "production-grade"'
-        ),
+        _edit("/work/prep-a-step/content/reward-serve.json", '"pitch": "production-grade"'),
         ROOTS,
     )
     assert _decision(r) == "ask"
@@ -205,9 +201,7 @@ def test_code_files_are_never_gated() -> None:
 
 
 def test_charter_is_exempt() -> None:
-    r = claim_gate.decide(
-        _write("/work/reward-serve/CHARTER.md", "forbidden: distributed"), ROOTS
-    )
+    r = claim_gate.decide(_write("/work/reward-serve/CHARTER.md", "forbidden: distributed"), ROOTS)
     assert r is None
 
 
@@ -254,9 +248,7 @@ def test_claim_gate_script_speaks_the_hook_protocol() -> None:
 
 
 def test_claim_gate_script_is_silent_when_clean() -> None:
-    p = _run(
-        "claim_gate.py", _write("/work/reward-serve/docs/x.md", "one machine, honestly")
-    )
+    p = _run("claim_gate.py", _write("/work/reward-serve/docs/x.md", "one machine, honestly"))
     assert p.returncode == 0 and p.stdout.strip() == ""
 
 
@@ -312,3 +304,14 @@ def test_session_facts_line_survives_no_cache_and_no_git() -> None:
 
     line = session_facts.facts_line(None, None, None, refreshing=True)
     assert "test count unknown" in line and "collecting" in line
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "java -jar ingest.jar el-ingest replay --date 2026-09-01",
+        "python -m loadgen.service --rps 20",
+    ],
+)
+def test_event_ledger_measurement_commands_are_recognised(cmd: str) -> None:
+    assert measurement_gate.is_measurement(cmd)

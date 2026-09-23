@@ -42,7 +42,9 @@ from typing import Any
 
 MEASUREMENT_RE = re.compile(
     r"loadgen[./\\]sweep|loadgen\.sweep|run_latency|run_accuracy|box_quiet\.py"
-    r"|pytest\b[^\n]*bench|record_demo\.py",
+    r"|pytest\b[^\n]*bench|record_demo\.py"
+    # event-ledger (the sibling Java pipeline measured with this same discipline)
+    r"|el-ingest\s+replay|el-bench|el_bench|loadgen[./\\]service",
     re.I,
 )
 SMOKE_RE = re.compile(r"--smoke\b")
